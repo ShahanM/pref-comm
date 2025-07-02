@@ -1,20 +1,3 @@
-export const VizTypes = {
-	CONTINUOUS_COUPLED: 1,
-	CONTINUOUS_DECOUPLED: 2,
-	DISCRETE_COUPLED: 3,
-	DISCRETE_DECOUPLED: 4
-}
-
-export const VizLabels = {
-	1: 'Continuous Coupled',
-	2: 'Continuous Decoupled',
-	3: 'Discrete Coupled',
-	4: 'Discrete Decoupled'
-}
-
-export const LIKE_CUTOFF = 3;
-export const DISLIKE_CUTOFF = 3;
-
 export const STRINGS = {
 	WINDOW_TOO_SMALL: `<p>This study requires your browser to be at least 
 					<strong><underline>1200 pixels wide</underline></strong>. 
@@ -24,3 +7,5 @@ export const STRINGS = {
 					Please try again later.</p><p>If the problem persists, 
 					please contact the study administrator.</p>`,
 }
+
+export const RETRY_DELAYS_MS = [1000, 3000, 5000, 10000, 20000];

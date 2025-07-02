@@ -1,6 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Suspense, useEffect, useState } from 'react';
-import { ThemeProvider } from 'react-bootstrap';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { ThemeProvider, Toast, ToastContainer } from 'react-bootstrap';
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 import {
@@ -8,7 +8,6 @@ import {
 	StudyStep,
 	useStudy
 } from 'rssa-api';
-import { STRINGS } from './constants/defaults';
 import AdvisorsPage from './pages/advisors/AdvisorsPage';
 import Demographics from './pages/demographics/DemographicsPage';
 import FeedbackPage from './pages/feedback/FeedbackPage';
@@ -20,6 +19,7 @@ import { participantState, studyStepState } from './state/studyState';
 import './styles/App.css';
 import './styles/components.css';
 import './styles/main.css';
+import { RETRY_DELAYS_MS, STRINGS } from './utils/constants';
 import { WarningDialog } from './widgets/dialogs/warningDialog';
 
 
@@ -30,7 +30,6 @@ const customBreakpoints = {
 	xl4: 2000
 };
 
-const RETRY_DELAYS_MS = [5000, 10000, 30000, 60000];
 
 function App() {
 
@@ -40,56 +39,61 @@ function App() {
 	const [studyStep, setStudyStep] = useRecoilState(studyStepState);
 	const [checkpointUrl, setCheckpointUrl] = useState<string>('/');
 	const [studyError, setStudyError] = useState<boolean>(false);
-	const [isLoading, setIsLoaiding] = useState<boolean>(true);
+	const [isLoading, setIsLoading] = useState<boolean>(true);
 
-	const [fetchError, setFetchError] = useState<boolean>(false);
 	const [retryAttempt, setRetryAttempt] = useState<number>(0);
-	const [currentFetchTrigger, setCurrentFetchTrigger] = useState<number>(0);
+	const [showToast, setShowToast] = useState<boolean>(false);
 
-	const handleStepUpdate = (step: StudyStep, currentParticipant: Participant, referrer: string) => {
-		const newParticipant: Participant = {
-			...currentParticipant,
-			current_step: step.id,
-		};
-		console.log("Updating participant with new step:", newParticipant, currentParticipant);
-		console.log("Current step:", step);
-		try {
-			studyApi.put('participants/', newParticipant).then(() => {
-				localStorage.setItem('participant', JSON.stringify(newParticipant));
-				localStorage.setItem('studyStep', JSON.stringify(step));
-				localStorage.setItem('lastUrl', referrer);
-			});
-			setParticipant(newParticipant);
-			setStudyStep(step);
-			setCheckpointUrl(referrer);
-			studyApi.setParticipantId(newParticipant.id);
-		} catch (error) {
-			console.error("Error updating participant", error);
-			setFetchError(true);
-			setStudyError(true);
-		}
-	}
+	const handleStepUpdate = useCallback(
+		async (step: StudyStep, currentParticipant: Participant, referrer: string) => {
+			const newParticipant: Participant = {
+				...currentParticipant,
+				current_step: step.id,
+			};
+			try {
+				studyApi.put('participants/', newParticipant).then(() => {
+					localStorage.setItem('participant', JSON.stringify(newParticipant));
+					localStorage.setItem('studyStep', JSON.stringify(step));
+					localStorage.setItem('lastUrl', referrer);
+				});
+				setParticipant(newParticipant);
+				setStudyStep(step);
+				setCheckpointUrl(referrer);
+				studyApi.setParticipantId(newParticipant.id);
+			} catch (error) {
+				console.error("Error updating participant", error);
+				setStudyError(true);
+			}
+		}, [studyApi, setParticipant, setStudyStep]);
 
 	useEffect(() => {
-		if (fetchError && !isLoading) {
+		if (studyError && !isLoading) {
 			const nextDelay = RETRY_DELAYS_MS[retryAttempt];
-
 			if (nextDelay !== undefined) {
 				console.log(`Retrying fetch in ${nextDelay / 1000} seconds... (Attempt ${retryAttempt + 1})`);
+				setShowToast(true);
 				const timerId = setTimeout(() => {
-					setRetryAttempt(prev => prev + 1);
-					setCurrentFetchTrigger(prev => prev + 1);
+					setRetryAttempt((prev) => prev + 1);
 				}, nextDelay);
 
-				return () => clearTimeout(timerId);
+				return () => {
+					clearTimeout(timerId);
+					setShowToast(false);
+				};
 			} else {
-				console.warn("Max retry attempts reached. Please refresh to try again.");
+				console.warn('Max retry attempts reached. Please refresh to try again.');
+				setShowToast(false);
 			}
+		} else if (!studyError) {
+			setRetryAttempt(0);
+			setShowToast(false);
 		}
-	}, [fetchError, isLoading, retryAttempt]);
+	}, [studyError, isLoading, retryAttempt]);
 
 
 	useEffect(() => {
+		let isMounted = true;
+
 		const loadCachedData = () => {
 			const participantCache = localStorage.getItem('participant');
 			const studyStepCache = localStorage.getItem('studyStep');
@@ -109,29 +113,38 @@ function App() {
 					return true;
 				} catch (error) {
 					console.error("Error parsing cached data", error);
-					setFetchError(true);
 
 					localStorage.removeItem('participant');
 					localStorage.removeItem('studyStep');
 					localStorage.removeItem('lastUrl');
-					return false;
+					if (isMounted) {
+						setStudyError(true);
+					}
 				}
 			}
 			return false;
 		};
 
 		const fetchInitialData = async () => {
-			setIsLoaiding(true);
+			if (!isMounted) return;
+
+			setIsLoading(true);
 			try {
-				const studyStep = await studyApi.get<StudyStep>('studies/steps/first');
-				setStudyStep(studyStep);
-				setStudyError(false);
+				const fetchedStudyStep = await studyApi.get<StudyStep>('studies/steps/first');
+				if (isMounted) {
+					setStudyStep(fetchedStudyStep);
+					setStudyError(false);
+					setRetryAttempt(0);
+				}
 			} catch (error) {
 				console.error("Error fetching initial study data:", error);
-				setStudyError(true);
-				setFetchError(true);
+				if (isMounted) {
+					setStudyError(true);
+				}
 			} finally {
-				setIsLoaiding(false);
+				if (isMounted) {
+					setIsLoading(false);
+				}
 			}
 		};
 
@@ -139,15 +152,20 @@ function App() {
 			if (!loadCachedData()) {
 				fetchInitialData();
 			} else {
-				setIsLoaiding(false);
+				setIsLoading(false);
 			}
 		} else {
-			setIsLoaiding(false);
+			setIsLoading(false);
 		}
-	}, [studyApi, setParticipant, setStudyStep, participant, studyStep, isLoading, studyError, currentFetchTrigger]);
+
+		return () => {
+			isMounted = false;
+		}
+	}, [studyApi, setParticipant, setStudyStep, participant, studyStep, studyError, retryAttempt]);
 
 	useEffect(() => {
 		const handleResize = () => { setShowWarning(window.innerWidth < 1200); }
+		handleResize();
 		window.addEventListener('resize', handleResize);
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
@@ -160,10 +178,24 @@ function App() {
 				{showWarning && <WarningDialog show={showWarning} title="Warning"
 					message={STRINGS.WINDOW_TOO_SMALL} disableHide={true} />
 				}
-				{
-					studyError && <WarningDialog show={studyError} title="Error"
-						message={STRINGS.STUDY_ERROR} />
-				}
+				{studyError && (
+					<ToastContainer position="top-center" className="p-3">
+						<Toast bg="danger" show={showToast} onClose={() => setShowToast(false)} autohide={false}>
+							<Toast.Body className="text-white">
+								{RETRY_DELAYS_MS[retryAttempt] === undefined ? (
+									<>
+										{STRINGS.STUDY_ERROR} <br /> Max retry attempts reached. Please refresh to try again.
+									</>
+								) : (
+									<>
+										There was an error registering this study. Retrying in{' '}
+										{RETRY_DELAYS_MS[retryAttempt] / 1000} seconds...
+									</>
+								)}
+							</Toast.Body>
+						</Toast>
+					</ToastContainer>
+				)}
 				<Router basename='/preference-community'>
 					<Suspense fallback={<div>Loading...</div>}>
 						<Routes>

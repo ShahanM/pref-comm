@@ -5,7 +5,6 @@ export default function HeaderJumbotron(props) {
 
 	const cleanContent = DOMPurify.sanitize(props.content);
 	const cleanPageDescription = DOMPurify.sanitize(props.pageInstruction);
-	console.log(cleanPageDescription);
 	const clean = `${cleanContent} ${cleanPageDescription}`;
 	const parsed = parse(clean);
 
