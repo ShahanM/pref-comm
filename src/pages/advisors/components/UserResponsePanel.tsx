@@ -87,7 +87,7 @@ const AdviceSelectionWidget: React.FC<AdviceSelectionWidgetProps> = ({
 	const [loading, setLoading] = useState(false);
 
 	const submitChoice = useCallback(
-		(advisorId: number, selection: string) => {
+		(advisorId: string, selection: string) => {
 			setLoading(true);
 			studyApi.post<UserSelectionResponse,
 				boolean>("prefComm/advisors/", {

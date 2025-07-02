@@ -7,24 +7,23 @@ import './styles/components.css';
 import './styles/main.css';
 import { WarningDialog } from './widgets/dialogs/warningDialog';
 
+import AdvisorsPage from './pages/advisors/AdvisorsPage';
+import Demographics from './pages/demographics/DemographicsPage';
 import MovieRatingPage from './pages/MovieRatingPage';
 import Survey from './pages/SurveyPage';
 import SystemIntro from './pages/SystemIntro';
-import AdvisorsPage from './pages/advisors/AdvisorsPage';
-import Demographics from './pages/demographics/DemographicsPage';
-import Welcome from './pages/welcome';
+import Welcome from './pages/Welcome';
 
 import { STRINGS } from './constants/defaults';
 
+import { useRecoilState } from 'recoil';
 import {
 	Participant,
 	StudyStep,
-	emptyParticipant,
-	emptyStep,
-	isEmptyParticipant,
-	isEmptyStep,
 	useStudy
 } from 'rssa-api';
+import FeedbackPage from './pages/feedback/FeedbackPage';
+import { participantState, studyStepState } from './state/studyState';
 
 // TODO: Test the survey pages
 
@@ -36,59 +35,102 @@ const customBreakpoints = {
 };
 
 function App() {
+
 	const { studyApi } = useStudy();
 	const [showWarning, setShowWarning] = useState<boolean>(false);
-	const [participant, setParticipant] = useState<Participant>(emptyParticipant);
-	const [studyStep, setStudyStep] = useState<StudyStep>(emptyStep);
+	const [participant, setParticipant] = useRecoilState(participantState);
+	const [studyStep, setStudyStep] = useRecoilState(studyStepState);
 	const [checkpointUrl, setCheckpointUrl] = useState<string>('/');
 	const [studyError, setStudyError] = useState<boolean>(false);
+	const [isLoading, setIsLoaiding] = useState<boolean>(true);
 
-	const handleStepUpdate = (step: StudyStep, referrer: string) => {
-		const newParticipant = { ...participant, current_step: step.id };
-		studyApi.put('participant/', newParticipant).then(() => {
-			localStorage.setItem('participant', JSON.stringify(newParticipant));
-			localStorage.setItem('studyStep', JSON.stringify(step));
-			localStorage.setItem('lastUrl', referrer);
-		});
-		setParticipant(newParticipant);
-		setStudyStep(step);
-		setCheckpointUrl(referrer);
+	const handleStepUpdate = (step: StudyStep, currentParticipant: Participant, referrer: string) => {
+		const newParticipant: Participant = {
+			...currentParticipant,
+			current_step: step.id,
+		};
+		console.log("Updating participant with new step:", newParticipant, currentParticipant);
+		console.log("Current step:", step);
+		try {
+			studyApi.put('participants/', newParticipant).then(() => {
+				localStorage.setItem('participant', JSON.stringify(newParticipant));
+				localStorage.setItem('studyStep', JSON.stringify(step));
+				localStorage.setItem('lastUrl', referrer);
+			});
+			setParticipant(newParticipant);
+			setStudyStep(step);
+			setCheckpointUrl(referrer);
+			studyApi.setParticipantId(newParticipant.id);
+		} catch (error) {
+			console.error("Error updating participant", error);
+			setStudyError(true);
+		}
 	}
 
 
 	useEffect(() => {
-		const participantCache = localStorage.getItem('participant');
-		const studyStepCache = localStorage.getItem('studyStep');
-		const checkpointUrl = localStorage.getItem('lastUrl');
-		if (participantCache && studyStepCache) {
-			const cparticipant = JSON.parse(participantCache);
-			if (!isEmptyParticipant(cparticipant)) {
-				setParticipant(cparticipant);
-			}
-			const cstudyStep = JSON.parse(studyStepCache);
-			if (!isEmptyStep(cstudyStep)) {
-				setStudyStep(cstudyStep);
-			}
+		const loadCachedData = () => {
+			const participantCache = localStorage.getItem('participant');
+			const studyStepCache = localStorage.getItem('studyStep');
+			const checkpointUrl = localStorage.getItem('lastUrl');
 
-			if (checkpointUrl) {
-				setCheckpointUrl(checkpointUrl);
+			if (participantCache && studyStepCache) {
+				try {
+					const cparticipant = JSON.parse(participantCache);
+					const cstudyStep = JSON.parse(studyStepCache);
+
+					if (cparticipant) {
+						setParticipant(cparticipant);
+						studyApi.setParticipantId(cparticipant.id);
+					}
+					if (cstudyStep) { setStudyStep(cstudyStep); }
+					if (checkpointUrl) { setCheckpointUrl(checkpointUrl); }
+					return true;
+				} catch (error) {
+					console.error("Error parsing cached data", error);
+
+					localStorage.removeItem('participant');
+					localStorage.removeItem('studyStep');
+					localStorage.removeItem('lastUrl');
+					return false;
+
+				}
 			}
-		} else {
-			studyApi.get<StudyStep>('studystep/first').then((studyStep) => {
+			return false;
+		};
+
+		const fetchInitialData = async () => {
+			setIsLoaiding(true);
+			try {
+				const studyStep = await studyApi.get<StudyStep>('studies/steps/first');
 				setStudyStep(studyStep);
 				setStudyError(false);
-			}).catch((error) => {
+			} catch (error) {
+				console.error("Error fetching initial study data:", error);
 				setStudyError(true);
-				console.error('Error fetching the first study step:', error);
-			});
+			} finally {
+				setIsLoaiding(false);
+			}
+		};
+
+		if (!participant && !studyStep) {
+			if (!loadCachedData()) {
+				fetchInitialData();
+			} else {
+				setIsLoaiding(false);
+			}
+		} else {
+			setIsLoaiding(false);
 		}
-	}, [studyApi]);
+	}, [studyApi, setParticipant, setStudyStep, participant, studyStep, isLoading, studyError]);
 
 	useEffect(() => {
 		const handleResize = () => { setShowWarning(window.innerWidth < 1200); }
 		window.addEventListener('resize', handleResize);
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
+
+	if (isLoading) { return <div>Loading...</div> }
 
 	return (
 		<ThemeProvider breakpoints={Object.keys(customBreakpoints)}>
@@ -107,9 +149,8 @@ function App() {
 								<Welcome
 									next="/demographics"
 									checkpointUrl={checkpointUrl}
-									studyStep={studyStep}
 									setNewParticipant={setParticipant}
-									updateCallback={handleStepUpdate}
+									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
 							} />
@@ -117,9 +158,7 @@ function App() {
 								<Survey
 									next="/systemintro"
 									checkpointUrl={checkpointUrl}
-									participant={participant}
-									studyStep={studyStep}
-									updateCallback={handleStepUpdate}
+									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
 							} />
@@ -127,9 +166,7 @@ function App() {
 								<SystemIntro
 									next="/ratemovies"
 									checkpointUrl={checkpointUrl}
-									participant={participant}
-									studyStep={studyStep}
-									updateCallback={handleStepUpdate}
+									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
 							} />
@@ -137,9 +174,7 @@ function App() {
 								<MovieRatingPage
 									next="/advisors"
 									checkpointUrl={checkpointUrl}
-									participant={participant}
-									studyStep={studyStep}
-									updateCallback={handleStepUpdate}
+									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
 							} />
@@ -147,9 +182,7 @@ function App() {
 								<AdvisorsPage
 									next="/postsurvey"
 									checkpointUrl={checkpointUrl}
-									participant={participant}
-									studyStep={studyStep}
-									updateCallback={handleStepUpdate}
+									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
 							} />
@@ -157,9 +190,7 @@ function App() {
 								<Demographics
 									next="/presurvey"
 									checkpointUrl={checkpointUrl}
-									participant={participant}
-									studyStep={studyStep}
-									updateCallback={handleStepUpdate}
+									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
 							} />
@@ -167,25 +198,20 @@ function App() {
 								<Survey
 									next="/feedback"
 									checkpointUrl={checkpointUrl}
-									participant={participant}
-									studyStep={studyStep}
-									updateCallback={handleStepUpdate}
+									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
 							} />
 
-							{/*TODO: Fix the FeedbackPage */}
-							{/* <Route path="/feedback" element={
+							<Route path="/feedback" element={
 								<FeedbackPage
 									next="/quit"
 									checkpointUrl={checkpointUrl}
-									participant={participant}
-									studyStep={studyStep}
-									updateCallback={handleStepUpdate}
+									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
 
-							} /> */}
+							} />
 							<Route path="/quit" element={<h1>Thank you for participating!</h1>} />
 						</Routes>
 					</Suspense>

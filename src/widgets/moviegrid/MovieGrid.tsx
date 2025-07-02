@@ -1,25 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Spinner from 'react-bootstrap/Spinner';
+import { useStudy } from 'rssa-api';
 import LoadingText from '../LoadingText';
-import { post } from '../../middleware/requests';
-import { mapKeyContainsAll } from '../../utils/helper';
 import './MovieGrid.css';
 import MovieGridItem from './moviegriditem/MovieGridItem';
 import { Movie, MovieRating } from './moviegriditem/MovieGridItem.types';
-import { useStudy } from 'rssa-api';
 
 interface MovieGridProps {
-	movieIds: string[];
 	itemsPerPage: number;
 	dataCallback: (data: any) => void;
 }
 
+const RETRY_DELAYS_MS = [5000, 10000, 30000, 60000];
+
 const MovieGrid: React.FC<MovieGridProps> = ({
-	movieIds,
 	itemsPerPage,
 	dataCallback }
 ) => {
@@ -27,155 +25,160 @@ const MovieGrid: React.FC<MovieGridProps> = ({
 	const { studyApi } = useStudy();
 
 	const [currentPage, setCurrentPage] = useState<number>(1);
-	const [movieRatingsLookup, setMovieRatingsLookup] = useState<Map<string, MovieRating>>();
-
+	const [movieRatingsLookup, setMovieRatingsLookup] = useState<Map<string, MovieRating>>(new Map());
 	const [movieMap, setMovieMap] = useState<Map<string, Movie>>(new Map<string, Movie>());
 
-
-	const [loading, setLoading] = useState<boolean>(false);
-	const [movieIdCache, setMovieIdCache] = useState<string[]>(movieIds);
-	const [moviesToFetch, setMoviesToFetch] = useState<string[]>([]);
+	const [isLoadingMovies, setIsLoadingMovies] = useState<boolean>(false);
+	const [fetchError, setFetchError] = useState<boolean>(false);
+	const [retryAttempt, setRetryAttempt] = useState<number>(0);
+	const [currentFetchTrigger, setCurrentFetchTrigger] = useState<number>(0);
 
 	const [prevBtnDisabled, setPrevBtnDisabled] = useState<boolean>(true);
 	const [nextBtnDisabled, setNextBtnDisabled] = useState<boolean>(true);
 
+	const fetchMovies = useCallback(async () => {
+		setIsLoadingMovies(true);
+		setFetchError(false);
 
-	// FIXME: we do not need this anymore because the API response is already shuffled
-	// We just need to paginate the response.
-	// const pickRandomMovies = (unfetchedIds: number[], numItems: number) => {
-	// 	// const limit = itemsPerPage * 2;
-	// 	const limit = numItems * 2 // FIXME hardcoded values
-	// 	let randomMovies = [];
-	// 	let moviearr = [...unfetchedIds];
-	// 	for (let i = 0; i < limit; i++) {
-	// 		let randomMovie = moviearr.splice(Math.floor(Math.random()
-	// 			* moviearr.length), 1);
-	// 		randomMovies.push(...randomMovie);
-	// 	}
-	// 	setMovieIdCache(moviearr);
-	// 	setMoviesToFetch(randomMovies);
-	// }
+		const offset = movieMap.size;
+		const limit = itemsPerPage * 2;
 
-	const updateMoviePageData = (unfetchIds: string[], numItems: number) => {
-		const limit = numItems * 2 // FIXME hardcoded values
-		let moviearr = [...unfetchIds];
-		let fetcharr = moviearr.splice(0, limit);
+		try {
+			const movies: Movie[] = await studyApi.get<Movie[]>(`movies/ers?offset=${offset}&limit=${limit}`);
+			setMovieMap(prevMovieMap => {
+				const newMovieMap = new Map<string, Movie>(prevMovieMap);
+				movies.forEach(item => {
+					newMovieMap.set(item.id, item);
+				});
+				return newMovieMap;
+			});
+			setRetryAttempt(0);
+		} catch (error: any) {
+			console.error("Error fetching movies:", error);
+			setFetchError(true);
+		} finally {
+			setIsLoadingMovies(false);
+		}
+	}, [movieMap, itemsPerPage, studyApi]);
 
-		setMovieIdCache(moviearr);
-		setMoviesToFetch(fetcharr);
-	}
 
 	useEffect(() => {
-		updateMoviePageData(movieIds, itemsPerPage);
-	}, [movieIds, itemsPerPage])
+		const requiredMoviesForNextPage = (currentPage + 1) * itemsPerPage;
+		if (movieMap.size < requiredMoviesForNextPage && !isLoadingMovies && !fetchError) {
+			fetchMovies();
+		}
 
-	const updateCurrentPage = (page: number) => {
-		setCurrentPage(page);
-	}
+	}, [movieMap, itemsPerPage, currentPage, isLoadingMovies, fetchError, fetchMovies, currentFetchTrigger]);
 
 	useEffect(() => {
-		const getMoviesByIDs = async (ids: string[]) => {
-			setLoading(true);
-			studyApi.post<string[], Movie[]>('movie/ers', ids)
-				.then((newmovies: Movie[]) => {
-					let newmovieMap = new Map<string, Movie>(movieMap);
-					newmovies.forEach(item => {
-						newmovieMap.set(item.id, item);
-					});
-					setMovieMap(newmovieMap);
-					setMoviesToFetch([]);
-				})
-				.catch((error) => console.log(error));
-		}
-		if (moviesToFetch.length > 0 && !mapKeyContainsAll<string>(movieMap, moviesToFetch)) {
-			getMoviesByIDs(moviesToFetch);
-		}
-	}, [moviesToFetch, movieMap, studyApi]);
+		if (fetchError && !isLoadingMovies) {
+			const nextDelay = RETRY_DELAYS_MS[retryAttempt];
 
-	const renderPrev = () => {
+			if (nextDelay !== undefined) {
+				console.log(`Retrying fetch in ${nextDelay / 1000} seconds... (Attempt ${retryAttempt + 1})`);
+				const timerId = setTimeout(() => {
+					setRetryAttempt(prev => prev + 1);
+					setCurrentFetchTrigger(prev => prev + 1);
+				}, nextDelay);
+
+				return () => clearTimeout(timerId);
+			} else {
+				console.warn("Max retry attempts reached. Please refresh to try again.");
+			}
+		}
+	}, [fetchError, isLoadingMovies, retryAttempt]);
+
+	const renderPrev = useCallback(() => {
 		if (currentPage > 1) {
-			updateCurrentPage(currentPage - 1)
 			setCurrentPage(currentPage - 1);
+			setRetryAttempt(0);
 		}
-	}
+	}, [currentPage]);
 
-	const renderNext = () => {
-		if (currentPage * itemsPerPage < movieMap.size) {
-			updateMoviePageData(movieIdCache, 24);
-		}
-		updateCurrentPage(currentPage + 1);
+	const renderNext = useCallback(() => {
 		setCurrentPage(currentPage + 1);
-	}
+		setRetryAttempt(0);
+	}, [currentPage]);
 
 	useEffect(() => {
-		setNextBtnDisabled(currentPage * itemsPerPage >= movieMap.size);
+		const hasMoreMoviesToLoad = movieMap.size < (currentPage + 1) * itemsPerPage;
+		const maxRetriesReached = fetchError && RETRY_DELAYS_MS[retryAttempt] === undefined;
+
+		setNextBtnDisabled(
+			(isLoadingMovies && hasMoreMoviesToLoad) ||
+			(currentPage * itemsPerPage >= movieMap.size && !isLoadingMovies && !fetchError) ||
+			maxRetriesReached
+		);
 		setPrevBtnDisabled(currentPage === 1);
-	}, [currentPage, itemsPerPage, movieMap.size])
+	}, [currentPage, itemsPerPage, movieMap.size, isLoadingMovies, fetchError, retryAttempt]);
 
-	useEffect(() => { setLoading(false); }, [movieMap])
 
-	const rateMovies = (newRating: number, movieid: string) => {
-		console.log("MovieGrid rateMovies", newRating, movieid);
+	const rateMovies = useCallback((newRating: number, movieid: string) => {
+		setMovieMap(prevMovieMap => {
+			const newGalleryMovies = new Map<string, Movie>(prevMovieMap);
+			const ratedMovieData = newGalleryMovies.get(movieid);
+			if (ratedMovieData) {
+				ratedMovieData.rating = newRating;
+				newGalleryMovies.set(movieid, ratedMovieData);
+			}
+			return newGalleryMovies;
+		});
 
-		let galleryMovies = new Map<string, Movie>(movieMap);
-		let ratedMovies = new Map<string, MovieRating>(movieRatingsLookup);
-
-		let ratedMovie = ratedMovies.get(movieid);
-		if (ratedMovie) {
-			ratedMovie.rating = newRating;
-		} else {
+		setMovieRatingsLookup(prevRatedMovies => {
+			const newRatedMovies = new Map<string, MovieRating>(prevRatedMovies);
 			const movie = movieMap.get(movieid);
 			if (movie) {
-				ratedMovie = {
+				newRatedMovies.set(movieid, {
 					id: movie.id,
 					movielens_id: movie.movielens_id,
 					rating: newRating
-				};
-			} else { return }
-		}
-
-		let ratedMovieData = galleryMovies.get(movieid);
-		if (ratedMovieData) {
-			ratedMovieData.rating = newRating;
-			galleryMovies.set(movieid, ratedMovieData);
-			setMovieMap(galleryMovies);
-		}
-
-		ratedMovies.set(movieid, ratedMovie);
-		setMovieRatingsLookup(ratedMovies);
-	}
+				});
+			}
+			return newRatedMovies;
+		});
+	}, [movieMap]);
 
 	useEffect(() => {
-		if (movieRatingsLookup) {
-			dataCallback([...movieRatingsLookup.values()]);
-		}
-	}, [movieRatingsLookup, dataCallback])
+		dataCallback([...movieRatingsLookup.values()]);
+	}, [movieRatingsLookup, dataCallback]);
 
+	const visibleMovies = useMemo(() => {
+		return [...movieMap.values()].slice(
+			(currentPage - 1) * itemsPerPage,
+			currentPage * itemsPerPage
+		);
+	}, [movieMap, currentPage, itemsPerPage]);
+	const hasContentOnCurrentPage = visibleMovies.length > 0;
 	return (
 		<Container className="gallery">
 			<Row>
 				<div className="grid-container">
-					{(currentPage * itemsPerPage <= movieMap.size) ?
-						<ul>
-							{[...movieMap.values()].slice((currentPage - 1) * itemsPerPage,
-								currentPage * itemsPerPage)
-								.map(currentMovie => (
+					{isLoadingMovies && !hasContentOnCurrentPage ? (
+						<div style={{
+							minWidth: "918px",
+							minHeight: "fit-parent",
+							display: "flex",
+							justifyContent: "center",
+							alignItems: "center"
+						}}>
+							<Spinner animation="border" role="status"
+								style={{
+									width: "54px", height: "54px"
+								}} />
+						</div>
+					) : (
+						hasContentOnCurrentPage ? (
+							<ul>
+								{visibleMovies.map(currentMovie => (
 									<MovieGridItem key={"TN_" + currentMovie.id}
 										movieItem={currentMovie}
 										ratingCallback={rateMovies} />
 								))}
-						</ul>
-						: <div style={{
-							minWidth: "918px",
-							minHeight: "fit-parent"
-						}}>
-							<Spinner animation="border" role="status"
-								style={{
-									margin: "18% 50%",
-									width: "54px", height: "54px"
-								}} />
-						</div>
-					}
+							</ul>
+						) : (
+							<div>No movies to display.</div>
+						)
+					)}
 				</div>
 			</Row>
 			<Row className="galleryFooter">
@@ -193,10 +196,9 @@ const MovieGrid: React.FC<MovieGridProps> = ({
 						<Button id="gallery-right-btn"
 							disabled={nextBtnDisabled}
 							variant="ers" onClick={renderNext}>
-							{nextBtnDisabled && loading ?
+							{isLoadingMovies && nextBtnDisabled ?
 								<LoadingText text={"Fetching more movies"} />
 								: ">"}
-
 						</Button>
 					</div>
 				</Col>

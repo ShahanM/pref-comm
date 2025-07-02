@@ -35,7 +35,7 @@ const SearchMovieFormControl: React.FC<SearchMovieFormControlProps> = ({
 		if (query.trim() !== '') {
 			timeoutRef.current = setTimeout(() => {
 				studyApi
-					.post<{ query: string }, Movie[]>('movie/search_movie', {
+					.post<{ query: string }, Movie[]>('movies/search', {
 						query: query.trim(),
 					})
 					.then((response) => {
@@ -74,7 +74,7 @@ const SearchMovieFormControl: React.FC<SearchMovieFormControlProps> = ({
 			onItemSelected(null);
 			setSearchError('');
 			studyApi
-				.post<{ query: string }, Movie[]>('movie/search_movie', {
+				.post<{ query: string }, Movie[]>('movies/search', {
 					query: searchTerm.trim(),
 				})
 				.then((response) => {

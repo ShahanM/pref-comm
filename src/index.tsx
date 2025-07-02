@@ -1,5 +1,6 @@
 import React from "react";
 import { createRoot } from 'react-dom/client';
+import { RecoilRoot } from "recoil";
 import { StudyProvider } from 'rssa-api';
 import App from './App';
 import './index.css';
@@ -23,10 +24,12 @@ const root = createRoot(container!);
 
 root.render(
   <React.StrictMode>
-    <StudyProvider
-      config={providerConfig}>
-      <App />
-    </StudyProvider>
+    <RecoilRoot>
+      <StudyProvider
+        config={providerConfig}>
+        <App />
+      </StudyProvider>
+    </RecoilRoot>
   </React.StrictMode>
 );
 

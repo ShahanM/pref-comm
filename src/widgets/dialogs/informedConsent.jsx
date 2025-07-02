@@ -19,8 +19,8 @@ export default function InformedConsentModal(props) {
     } else {
       // Reset the form
       setConsentChoice('');
-      setName('');
-      setDate('');
+      // setName('');
+      // setDate('');
       setIsLoading(false);
       // Notify parent component that user didn't consent
       props.onClose(false);
@@ -30,8 +30,8 @@ export default function InformedConsentModal(props) {
   const handleClose = () => {
     // Reset the form
     setConsentChoice('');
-    setName('');
-    setDate('');
+    // setName('');
+    // setDate('');
     // Notify parent component to close the modal
     props.onClose(false);
   }
@@ -168,7 +168,7 @@ export default function InformedConsentModal(props) {
         <Form className="consent-form">
           <p className="informedConsent-title">Consent</p>
 
-          <Form.Group controlId="nameInput">
+          {/* <Form.Group controlId="nameInput">
             <Form.Label>Name:</Form.Label>
             <Form.Control
               type="text"
@@ -187,7 +187,7 @@ export default function InformedConsentModal(props) {
               onChange={(e) => setDate(e.target.value)}
               required
             />
-          </Form.Group>
+          </Form.Group> */}
 
           <div style={{ 
             border: '2px solid #f9b05c', 
@@ -235,7 +235,7 @@ export default function InformedConsentModal(props) {
         </Button>
         <Button 
           variant="ers" 
-          disabled={!consentChoice || isLoading || !name || !date}
+          disabled={!consentChoice || isLoading}
           onClick={handleConsent}
         >
           {!isLoading ? 'Continue' : 

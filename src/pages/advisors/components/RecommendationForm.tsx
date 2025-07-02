@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Alert, Button, Col, Container, Form, Image, Row } from "react-bootstrap";
+import { Button, Form, Image, Row } from "react-bootstrap";
+import { useStudy } from "rssa-api";
+import { Movie } from "../../../widgets/moviegrid/moviegriditem/MovieGridItem.types";
 import { AdvisorProfile, UserResponseFlag } from "../Advisor.types";
 import SearchMovieFormControl from "./SearchMovieFormControl";
-import { Movie } from "../../../widgets/moviegrid/moviegriditem/MovieGridItem.types";
-import { useStudy } from "rssa-api";
 
 
 export interface UserRecommendationFormProps {

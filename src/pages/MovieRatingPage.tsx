@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useRecoilValue } from 'recoil';
+import { CurrentStep, Participant, StudyStep, useStudy } from 'rssa-api';
+import { participantState, studyStepState } from '../state/studyState';
 import Footer from '../widgets/Footer';
 import Header from '../widgets/Header';
-import { useStudy, CurrentStep, StudyStep } from 'rssa-api';
 import MovieGrid from '../widgets/moviegrid/MovieGrid';
 import { MovieRating } from '../widgets/moviegrid/moviegriditem/MovieGridItem.types';
 import { StudyPageProps } from './StudyPage.types';
@@ -13,23 +15,22 @@ import { StudyPageProps } from './StudyPage.types';
 const MovieRatingPage: React.FC<StudyPageProps> = ({
 	next,
 	checkpointUrl,
-	participant,
-	studyStep,
-	updateCallback,
+	onStepUpdate,
 	sizeWarning
 }) => {
 	const itemsPerPage = 24;
 	const minRatingCount = 10;
 
+
+	const participant: Participant | null = useRecoilValue(participantState);
+	const studyStep: StudyStep | null = useRecoilValue(studyStepState);
+
 	const { studyApi } = useStudy();
 	const navigate = useNavigate();
 	const location = useLocation();
 
-	const [isUpdated, setIsUpdated] = useState<boolean>(false);
 	const [buttonDisabled, setButtonDisabled] = useState(true);
 	const [loading, setLoading] = useState(false);
-
-	const [movieIds, setMovieIds] = useState<string[]>([]);
 	const [ratedMovies, setRatedMovies] = useState<MovieRating[]>([]);
 
 
@@ -39,50 +40,39 @@ const MovieRatingPage: React.FC<StudyPageProps> = ({
 		}
 	}, [checkpointUrl, location.pathname, navigate]);
 
-	useEffect(() => {
-		if (isUpdated) {
-			localStorage.setItem('ratedMoviesData', JSON.stringify(ratedMovies));
-			navigate(next, { state: { ratedMovies: ratedMovies } });
+	const handleNextBtn = useCallback(async () => {
+		if (!participant || !studyStep) {
+			console.error("Participant or study step is not defined.");
+			return;
 		}
-	}, [isUpdated, navigate, next, ratedMovies]);
-
-	const handleNextBtn = () => {
+		if (ratedMovies.length < minRatingCount) {
+			console.warn(`Please rate at least ${minRatingCount} movies.`);
+		}
 		setLoading(true);
 		setButtonDisabled(true);
-		studyApi.post<CurrentStep, StudyStep>('studystep/next', {
-			current_step_id: participant.current_step
-		}).then((nextStep: StudyStep) => {
+
+		try {
+			const nextRouterStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
+				current_step_id: participant.current_step
+			});
+			onStepUpdate(nextRouterStep, participant, next);
 			localStorage.setItem('ratedMoviesData', JSON.stringify(ratedMovies));
-			updateCallback(nextStep, next)
-			setIsUpdated(true);
-		});
-	}
-
-	useEffect(() => {
-		const getAllMovieIds = async () => {
-			return studyApi.get<string[]>('movie/ids/ers')
-				.then((newmovies: string[]) => {
-					localStorage.setItem('allMovieIds', JSON.stringify(newmovies));
-					setMovieIds(newmovies);
-				})
-				.catch((error: any) => {
-					console.log(error);
-					return [];
-				});
+		} catch (error) {
+			console.error("Error fetching next step:", error);
+		} finally {
+			setLoading(false);
 		}
 
-		if (localStorage.getItem('allMovieIds')) {
-			const allmovieIds = JSON.parse(localStorage.getItem('allMovieIds') || '[]');
-			setMovieIds(allmovieIds);
-		} else {
-			getAllMovieIds();
-		}
-	}, [studyApi]);
-
+	}, [participant, studyStep, ratedMovies, studyApi, next, onStepUpdate]);
 
 	useEffect(() => {
 		setButtonDisabled(ratedMovies.length < minRatingCount);
 	}, [ratedMovies])
+
+
+	if (!participant || !studyStep) {
+		return <div>Loading study data...</div>;
+	}
 
 	return (
 		<Container>
@@ -93,7 +83,6 @@ const MovieRatingPage: React.FC<StudyPageProps> = ({
 				<Row>
 					<MovieGrid
 						dataCallback={setRatedMovies}
-						movieIds={movieIds}
 						itemsPerPage={itemsPerPage} />
 				</Row>
 			}

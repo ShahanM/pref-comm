@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import Alert from 'react-bootstrap/Alert';
 
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  useStudy,
-	CurrentStep, isEmptyStep, NewParticipant, Participant, StudyStep
+  CurrentStep, NewParticipant, Participant, StudyStep,
+  useStudy
 } from 'rssa-api';
 import { InitStudyPageProps } from './StudyPage.types';
 
+import { useRecoilValue } from 'recoil';
+import { studyStepState } from '../state/studyState';
 import Footer from '../widgets/Footer';
 import InformedConsentModal from '../widgets/dialogs/informedConsent';
 import HeaderJumbotron from '../widgets/headerJumbotron';
@@ -19,65 +19,49 @@ import HeaderJumbotron from '../widgets/headerJumbotron';
 const Welcome: React.FC<InitStudyPageProps> = ({
   next,
   checkpointUrl,
-  studyStep,
   setNewParticipant,
-  updateCallback }) => {
+  onStepUpdate }) => {
 
-    const [isUpdated, setIsUpdated] = useState<boolean>(false);
-    const [participant, setParticipant] = useState<Participant>();
-    const [show, setShowInformedConsent] = useState<boolean>(false);
+  const studyStep: StudyStep | null = useRecoilValue(studyStepState);
+  const [show, setShowInformedConsent] = useState<boolean>(false);
 
-    const { studyApi } = useStudy();
+  const { studyApi } = useStudy();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-    const navigate = useNavigate();
-    const location = useLocation();
+  const showInformedConsent = () => { setShowInformedConsent(!show); }
 
-    const showInformedConsent = () => { setShowInformedConsent(!show); }
-    const [showNoConsentMessage, setShowNoConsentMessage] = useState<boolean>(false);
-
-    useEffect(() => {
-      if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
-        navigate(checkpointUrl);
-      }
-    }, [checkpointUrl, location.pathname, navigate]);
-
-    const consentCallbackHandler = (consent: boolean) => {
-      if (consent) {
-        if (!isEmptyStep(studyStep))
-          studyApi.post<NewParticipant, Participant>('participant/', {
-            study_id: studyStep.study_id,
-            external_id: 'test_user', // FIXME: change to actual platform id
-            participant_type: '149078d0-cece-4b2c-81cd-a7df4f76d15a', // FIXME: use this as part of the environment variables and apiConfig
-            current_step: studyStep.id,
-            current_page: null
-          }).then((response) => {
-            setNewParticipant(response);
-            setParticipant(response);
-          });
-      }
+  useEffect(() => {
+    if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
+      navigate(checkpointUrl);
     }
+  }, [checkpointUrl, location.pathname, navigate]);
 
-    const handleSkipToMovies = () => {
-      // FIXME: This is a temporary solution to skip the consent form
-    }
-
-    useEffect(() => {
-      if (participant) {
-        studyApi.post<CurrentStep, StudyStep>('studystep/next', {
-          current_step_id: participant.current_step
-        }).then((nextStep) => {
-          updateCallback(nextStep, next);
-          setIsUpdated(true);
+  const consentCallbackHandler = async (consent: boolean) => {
+    if (consent && studyStep) {
+      try {
+        const response = await studyApi.post<NewParticipant, Participant>('participants/', {
+          study_id: studyStep.study_id,
+          external_id: 'test_user', // FIXME: change to actual platform id
+          participant_type: '149078d0-cece-4b2c-81cd-a7df4f76d15a', // FIXME: use this as part of the environment variables and apiConfig
+          current_step: studyStep.id,
+          current_page: null
         });
-      }
-    }, [participant, studyApi, updateCallback, navigate, next]);
-  
-    useEffect(() => {
-      if (isUpdated) {
+        console.log("Participant created successfully:", response);
+        setNewParticipant(response);
+        const nextStep: StudyStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
+          current_step_id: response.current_step
+        });
+        onStepUpdate(nextStep, response, next);
         navigate(next);
+      } catch (error) {
+        console.error("Error creating participant or updating step", error);
       }
-  }, [isUpdated, navigate, next]);
-  
+    }
+    setShowInformedConsent(false);
+  }
+
+
 
   return (
     <Container>
@@ -86,13 +70,13 @@ const Welcome: React.FC<InitStudyPageProps> = ({
           content="Thank you for participating in The Peer Recommendation Platform study. Your involvement is crucial for our research." />
       </Row>
 
-      {showNoConsentMessage && (
+      {/* {showNoConsentMessage && (
         <Row>
           <Alert variant="warning">
             You have chosen not to consent to the study. If you change your mind, you can click the "Get started" button again to review the consent form.
           </Alert>
         </Row>
-      )}
+      )} */}
 
       <Row>
         <Card bg="light">
@@ -153,7 +137,7 @@ const Welcome: React.FC<InitStudyPageProps> = ({
                 Your feedback will be invaluable for improving the system and understanding your experience.
               </li>
             </ul>
-            
+
             <p>
               We appreciate your time and insights. <strong>Let's get started!</strong>
             </p>
@@ -161,13 +145,13 @@ const Welcome: React.FC<InitStudyPageProps> = ({
         </Card>
       </Row>
 
-      <InformedConsentModal 
+      <InformedConsentModal
         show={show}
         consentCallback={consentCallbackHandler}
       />
       <Row>
-      <Footer callback={showInformedConsent} text={"Get Started"}
-					disabled={isEmptyStep(studyStep)} />
+        <Footer callback={showInformedConsent} text={"Get Started"}
+          disabled={!studyStep} />
       </Row>
     </Container>
   )

@@ -8,7 +8,7 @@ interface AdvisorPanelProps {
 	participantId: string;
 	advisor: AdvisorProfile,
 	avatar: Avatar,
-	updateCallback: (advisorId: number, response: UserResponseFlag) => void
+	updateCallback: (advisorId: string, response: UserResponseFlag) => void
 }
 
 

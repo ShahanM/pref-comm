@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { Col, Row } from "react-bootstrap";
-import { AdvisorProfile, AdvisorWidgetProps, Avatar, UserResponseFlag } from "../Advisor.types";
+import {AdvisorProfile, AdvisorWidgetProps, Avatar, UserResponseFlag } from "../Advisor.types";
 import cow from "../assets/cow.jpeg";
 import duck from "../assets/duck.jpeg";
 import elephant from "../assets/elephant.jpeg";
@@ -74,7 +74,7 @@ const AdvisorsWidget: React.FC<AdvisorWidgetProps> = ({
 	const avatarKeyMap = useCallback(() => {
 		const sortedAdvisorIds = Array.from(advisors.keys()).sort();
 		const avatarKeys = Object.keys(AVATARS);
-		const newMap = new Map<number, Avatar>();
+		const newMap = new Map<string, Avatar>();
 		for (let i = 0; i < sortedAdvisorIds.length; i++) {
 			const advisorKey = sortedAdvisorIds[i];
 			newMap.set(advisorKey, AVATARS[avatarKeys[i]]);
@@ -82,11 +82,11 @@ const AdvisorsWidget: React.FC<AdvisorWidgetProps> = ({
 		return newMap;
 	}, [advisors])
 
-	const getAdvisorAvatar = (advisorId: number) => {
+	const getAdvisorAvatar = (advisorId: string) => {
 		return avatarKeyMap().get(advisorId);
 	}
 
-	const handleSelect = (advisorId: number, idx: number) => {
+	const handleSelect = (advisorId: string, idx: number) => {
 		const selectedAdvisor = advisors.get(advisorId);
 		setActiveSelection(selectedAdvisor);
 		setApprovalPressed(false);
@@ -94,7 +94,7 @@ const AdvisorsWidget: React.FC<AdvisorWidgetProps> = ({
 		setRecommendationSubmitted(false);
 	};
 
-	const handleAccept = (advisorId: number) => {
+	const handleAccept = (advisorId: string) => {
 		const selectedAdvisor = advisors.get(advisorId);
 		selectedAdvisor.status = "Accepted";
 		setApprovalPressed(true);
@@ -103,7 +103,7 @@ const AdvisorsWidget: React.FC<AdvisorWidgetProps> = ({
 		setAdvisors(newAdvisors);
 	};
 
-	const handleReject = (advisorId: number) => {
+	const handleReject = (advisorId: string) => {
 		const selectedAdvisor = advisors.get(advisorId);
 		selectedAdvisor.status = "Rejected";
 		setApprovalPressed(true);
@@ -115,7 +115,7 @@ const AdvisorsWidget: React.FC<AdvisorWidgetProps> = ({
 		setAdvisors(newAdvisors);
 	};
 
-	const handleAdvisorUpdate = (advisorId: number, response: UserResponseFlag) => {
+	const handleAdvisorUpdate = (advisorId: string, response: UserResponseFlag) => {
 		console.log("Advisor updated:", advisorId, response);
 		const selectedAdvisor = advisors.get(advisorId);
 		response.selected ? selectedAdvisor.selected = true : selectedAdvisor.selected = false;

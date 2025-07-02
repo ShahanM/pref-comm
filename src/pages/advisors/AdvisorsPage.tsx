@@ -2,18 +2,28 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Row } from "react-bootstrap";
 import Container from "react-bootstrap/Container";
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useRecoilValue } from "recoil";
 import {
-	CurrentStep, isEmptyParticipant, Participant, StudyStep,
+	CurrentStep,
+	Participant, StudyStep,
 	useStudy
 } from "rssa-api";
+import { participantState, studyStepState } from "../../state/studyState";
 import Footer from "../../widgets/Footer";
 import Header from "../../widgets/Header";
 import LoadingScreen from '../../widgets/loadingscreen/LoadingScreen';
-import { Movie, MovieRating } from "../../widgets/moviegrid/moviegriditem/MovieGridItem.types";
+import { MovieRating } from "../../widgets/moviegrid/moviegriditem/MovieGridItem.types";
 import { StudyPageProps } from '../StudyPage.types';
-import AdvisorsWidget from "./components/AdvisorsWidget";
 import { AdvisorProfile } from "./Advisor.types";
+import AdvisorsWidget from "./components/AdvisorsWidget";
 import "./components/css/AdvisorsComponent.css";
+
+
+interface LocationState {
+	ratedMovies?: { [key: number]: MovieRating };
+}
+
+
 
 
 type AdvisorRecItemDetail = {
@@ -28,27 +38,26 @@ type AdvisorRequestObj = {
 const AdvisorsPage: React.FC<StudyPageProps> = ({
 	next,
 	checkpointUrl,
-	participant,
-	studyStep,
-	updateCallback,
+	onStepUpdate,
 	sizeWarning
 }) => {
+
+	const participant: Participant | null = useRecoilValue(participantState);
+	const studyStep: StudyStep | null = useRecoilValue(studyStepState);
 
 	const { studyApi } = useStudy();
 	const navigate = useNavigate();
 	const location = useLocation();
 
-	const stateData = location.state as any;
-	const [ratedMovies, setRatedMovies] = useState(new Map<number, MovieRating>());
+	const stateData = location.state as LocationState;
+	const [ratedMovies, setRatedMovies] = useState(new Map<string, MovieRating>());
 
-	const [isUpdated, setIsUpdated] = useState<boolean>(false);
 	const [loading, setLoading] = useState(false);
+	const [nextButtonDisabled, setNextButtonDisabled] = useState(true);
 
 	const [advisorDetails, setAdvisorDetails] =
-		useState<Map<number, AdvisorProfile>>(
-			new Map<number, AdvisorProfile>());
-
-	const [showNextButton, setShowNextButton] = useState(true);
+		useState<Map<string, AdvisorProfile>>(
+			new Map<string, AdvisorProfile>());
 
 	useEffect(() => {
 		if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
@@ -56,81 +65,103 @@ const AdvisorsPage: React.FC<StudyPageProps> = ({
 		}
 	}, [checkpointUrl, location.pathname, navigate]);
 
-	const handleNextBtn = useCallback(() => {
-		studyApi.post<CurrentStep, StudyStep>('studystep/next', {
-			current_step_id: participant.current_step
-		}).then((nextStep: StudyStep) => {
-			updateCallback(nextStep, next)
-			setIsUpdated(true);
-		});
-	}, [studyApi, participant, updateCallback, next])
-
-	useEffect(() => {
-		if (isUpdated) {
-			navigate(next);
+	const getRecommendations = useCallback(async (ratings: Map<string, MovieRating>) => {
+		if (!participant || !studyStep) {
+			console.warn("AdvisorsPage or participant is undefined in getRecommendations.");
+			return null;
 		}
-	}, [isUpdated, navigate, next]);
+		setLoading(true);
+		try {
+			const responseItems: AdvisorProfile[] = await studyApi.post<AdvisorRequestObj, AdvisorProfile[]>(
+				"recommendations/advisors/", {
+				user_id: participant.id,
+				user_condition: participant.condition_id,
+				is_baseline: 1, // FIXME: this should be based on the participant condition, not hardcoded
+				ratings: [...ratings.values()].map(rating => {
+					return {
+						item_id: rating.movielens_id,
+						rating: rating.rating
+					}
+				})
+			});
+			let itemMap = new Map<string, AdvisorProfile>();
+			for (let item of responseItems) { itemMap.set(item.id, item); }
+			setAdvisorDetails(itemMap);
+		} catch (error) {
+			console.error("Error fetching recommendations:", error);
+		} finally {
+			setLoading(false);
 
-	const getRecommendations = useCallback(
-		(ratings: Map<number, MovieRating>, participant: Participant) => {
-			setLoading(true);
-			studyApi.post<AdvisorRequestObj,
-				AdvisorProfile[]>("prefComm/advisors/", {
-					user_id: participant.id,
-					user_condition: participant.condition_id,
-					ratings: [...ratings.values()].map(rating => {
-						return {
-							item_id: rating.movielens_id,
-							rating: rating.rating
-						}
-					})
-				}).then((responseItems: AdvisorProfile[]) => {
-					let itemMap = new Map<number, AdvisorProfile>();
-					Array.from(responseItems).forEach((item) => {
-						let newItem = item;
-						item.selected = false;
-						item.responded = false;
-						itemMap.set(item.id, newItem);
-					});
-
-					setAdvisorDetails(itemMap);
-					setLoading(false);
-				}).catch((err: any) => {
-					console.log("Error", err);
-				});
-		}, [studyApi]);
+		}
+	}, [studyApi, participant, studyStep]);
 
 	useEffect(() => {
-		if (ratedMovies === undefined || ratedMovies.size === 0) {
+		if (!participant || !studyStep) {
+			console.warn("AdvisorsPage or participant is undefined in useEffect.");
+			return;
+		}
+
+		if (ratedMovies.size === 0) {
 			if (stateData && stateData.ratedMovies) {
-				const ratedMoviesData = new Map<number, MovieRating>();
+				const ratedMoviesData = new Map<string, MovieRating>();
 				for (let key in stateData.ratedMovies) {
 					let moviedata = stateData.ratedMovies[key];
-					ratedMoviesData.set(moviedata.movielens_id, moviedata);
+					ratedMoviesData.set(moviedata.id, moviedata);
 				}
 				setRatedMovies(ratedMoviesData);
 			} else {
 				const storedRatedMovies = localStorage.getItem('ratedMoviesData');
 				if (storedRatedMovies) {
-					const ratedMovieCache = JSON.parse(storedRatedMovies);
-					const ratedMovieData = new Map<number, MovieRating>();
-					for (let key in ratedMovieCache) {
-						ratedMovieData.set(parseInt(key), ratedMovieCache[key]);
+					try {
+						const ratedMovieCache: { [key: string]: MovieRating } = JSON.parse(storedRatedMovies);
+						const ratedMovieData = new Map<string, MovieRating>();
+						for (let key in ratedMovieCache) {
+							const movie = ratedMovieCache[key];
+							ratedMovieData.set(movie.id, ratedMovieCache[key]);
+						}
+						setRatedMovies(ratedMovieData);
+					} catch (error) {
+						console.error("Error parsing rated movies from local storage:", error);
+						// TODO: Clear stored local data and redirect to start of study
+						// localStorage.removeItem('ratedMoviesData');
+						// navigate('/'); // Example redirection
 					}
-					setRatedMovies(ratedMovieData);
 				} else {
-					console.error("Something went wrong with the rated movies");
+					console.error("No rated movies found in state or local storage.");
 					// TODO: Clear stored local data and redirect to start of study
+					// localStorage.removeItem('ratedMoviesData');
+					// navigate('/'); // Example redirection
 				}
 			}
 		}
-		if (advisorDetails.size === 0 &&
-			!isEmptyParticipant(participant) &&
-			ratedMovies.size > 0) {
-			getRecommendations(ratedMovies, participant);
+		if (ratedMovies.size > 0) {
+			getRecommendations(ratedMovies);
 		}
-	}, [ratedMovies, stateData, getRecommendations, advisorDetails, participant]);
+	}, [ratedMovies, stateData, getRecommendations, participant, studyStep]);
 
+
+	const handleNextBtn = useCallback(async () => {
+		if (!participant || !studyStep) {
+			console.error("Participant or study step is not defined.");
+			return;
+		}
+		try {
+			const nextRouteStep: StudyStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
+				current_step_id: participant.current_step
+			});
+			onStepUpdate(nextRouteStep, participant, next);
+			navigate(next);
+		} catch (error) {
+			console.error("Error fetching next step:", error);
+			// Handle error appropriately, e.g., show a notification or alert
+		} finally {
+			setLoading(false);
+		}
+	}, [studyApi, participant, onStepUpdate, next, studyStep, navigate]);
+
+	if (!participant || !studyStep) {
+		return <LoadingScreen loading={true} message="Initializing study data..." />;
+	}
 
 	return (
 		<Container>
@@ -150,7 +181,7 @@ const AdvisorsPage: React.FC<StudyPageProps> = ({
 				/>
 			}
 			<Row>
-				<Footer callback={handleNextBtn} disabled={showNextButton} />
+				<Footer callback={handleNextBtn} disabled={nextButtonDisabled} text={"Next"} />
 			</Row>
 		</Container>
 	)

@@ -1,49 +1,53 @@
-import { useEffect, useState } from 'react';
-import { StudyPageProps } from "./StudyPage.types"
-import { useStudy, CurrentStep, StudyStep } from "rssa-api";
+import { useCallback, useEffect } from 'react';
 import Card from 'react-bootstrap/Card';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import { useLocation, useNavigate } from 'react-router-dom';
-import NextButton from '../widgets/nextButton';
+import { useRecoilValue } from 'recoil';
+import { CurrentStep, Participant, StudyStep, useStudy } from "rssa-api";
+import { participantState, studyStepState } from '../state/studyState';
 import HeaderJumbotron from '../widgets/headerJumbotron';
+import NextButton from '../widgets/nextButton';
+import { StudyPageProps } from "./StudyPage.types";
 
 const SystemIntro: React.FC<StudyPageProps> = ({
-	next,
-	checkpointUrl,
-	participant,
-	studyStep,
-	updateCallback
+    next,
+    checkpointUrl,
+    onStepUpdate
 }) => {
+
+    const participant: Participant | null = useRecoilValue(participantState);
+    const studyStep: StudyStep | null = useRecoilValue(studyStepState);
+
     const { studyApi } = useStudy();
     const navigate = useNavigate();
-	const location = useLocation();
+    const location = useLocation();
 
 
-    const [isUpdated, setIsUpdated] = useState<boolean>(false);
+    useEffect(() => {
+        if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
+            navigate(checkpointUrl);
+        }
+    }, [checkpointUrl, location.pathname, navigate]);
 
-	// Allowing for some simple checkpoint saving so the participant
-	// can return to the page in case of a browser/system crash
-	useEffect(() => {
-		if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
-			navigate(checkpointUrl);
-		}
-	}, [checkpointUrl, location.pathname, navigate]);
+    const handleNextBtn = useCallback(async () => {
+        if (!participant || !studyStep) {
+            console.error("Participant or study step is not defined.");
+            return;
+        }
+        try {
 
-	const handleNextBtn = () => {
-		studyApi.post<CurrentStep, StudyStep>('studystep/next', {
-			current_step_id: participant.current_step
-		}).then((nextStep) => {
-			updateCallback(nextStep, next)
-			setIsUpdated(true);
-		});
-	}
+            const nextRouteStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
+                current_step_id: participant.current_step
+            });
+            onStepUpdate(nextRouteStep, participant, next)
+            navigate(next);
+        } catch (error) {
+            console.error("Error fetching next step:", error);
+            // Handle error, e.g., show a message to the user
+        }
 
-	useEffect(() => {
-		if (isUpdated) {
-			navigate(next);
-		}
-	}, [isUpdated, navigate, next]);
+    }, [studyApi, participant, studyStep, next, navigate, onStepUpdate]);
 
     return (
         <Container>
