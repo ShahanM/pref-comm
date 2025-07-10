@@ -198,10 +198,11 @@ const Survey: React.FC<StudyPageProps> = ({
 
 			try {
 				console.log("Submitting survey response:", responseData);
-				await studyApi.post<SurveyResponse, boolean>(`response/survey`, responseData);
+				await studyApi.post<SurveyResponse, boolean>(`responses/survey`, responseData);
 			} catch (error) {
 				console.error("Error submitting survey response:", error);
 				// TODO: Handle network or other errors during submission
+				return;
 			}
 		}
 

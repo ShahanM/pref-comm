@@ -257,7 +257,7 @@ function App() {
 								/>
 							} />
 
-							<Route path="/feedback" element={
+							<Route path="/feedback" element={ 
 								<FeedbackPage
 									next="/quit"
 									checkpointUrl={checkpointUrl}

@@ -419,3 +419,14 @@
 .selected-movie-block .movie-details {
 	margin: 0.5em;
 }
+
+
+.advisor-responded-pos {
+	color: green;
+	margin-left: 18px;
+}
+
+.advisor-responded-neg {
+	color: red;
+	margin-left: 18px;
+}

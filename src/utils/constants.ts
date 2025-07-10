@@ -1,3 +1,5 @@
+
+
 export const STRINGS = {
 	WINDOW_TOO_SMALL: `<p>This study requires your browser to be at least 
 					<strong><underline>1200 pixels wide</underline></strong>. 

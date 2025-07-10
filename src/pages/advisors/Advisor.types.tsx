@@ -1,8 +1,8 @@
 import { Movie } from "../../widgets/moviegrid/moviegriditem/MovieGridItem.types";
 
 export interface AdvisorWidgetProps {
-	participantId: string;
-	currentAdvisors: Map<string, any>;
+	// participantId: string;
+	// currentAdvisors: Map<string, any>;
 }
 
 export type AdvisorProfile = {
@@ -11,6 +11,8 @@ export type AdvisorProfile = {
 	recommendation: Movie;
 	selected?: boolean;
 	responded?: boolean;
+	recommendedMovie?: Movie;
+	rationaleText?: string;
 }
 
 export interface Avatar {
@@ -43,8 +45,8 @@ export interface AdviceSelectionButtonProps {
 }
 
 export interface UserResponsePanelProps {
-	participantId: string;
-	advisor: AdvisorProfile;
+	// participantId: string;
+	// advisor: AdvisorProfile;
 	updateCallback: (advisorId: string, response: UserResponseFlag) => void;
 	avatar: Avatar;
 }
@@ -57,7 +59,6 @@ export interface UserSelectionResponse {
 
 export interface AdviceSelectionWidgetProps {
 	avatarName: string
-	participantId: string
 	onSelection: (advisorId: string, response: UserResponseFlag) => void
 	advisorId: string
 }

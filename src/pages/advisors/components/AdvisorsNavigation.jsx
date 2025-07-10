@@ -40,6 +40,15 @@ const AdvisorListItem = ({ advisor, avatar, selected, selectCallback }) => {
           {nameSplit[0]}<br />{nameSplit[1]}
         </p>
       </div>
+      <div>
+        {advisor.responded &&
+          (
+            advisor.selected ?
+              <span className="advisor-responded-pos"> &#x2713; </span>
+              :
+              <span className="advisor-responded-neg"> &#x2717; </span>
+          )}
+      </div>
     </div>
   );
 }

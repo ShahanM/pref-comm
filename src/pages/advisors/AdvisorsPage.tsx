@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Row } from "react-bootstrap";
 import Container from "react-bootstrap/Container";
 import { useLocation, useNavigate } from 'react-router-dom';
-import { useRecoilValue } from "recoil";
+import { useRecoilState, useRecoilValue } from "recoil";
 import {
 	CurrentStep,
 	Participant, StudyStep,
@@ -17,14 +17,17 @@ import { StudyPageProps } from '../StudyPage.types';
 import { AdvisorProfile } from "./Advisor.types";
 import AdvisorsWidget from "./components/AdvisorsWidget";
 import "./components/css/AdvisorsComponent.css";
+import { advisorsMapState } from "../../state/advisorState";
 
+
+// Note: The state of advisors is maintained at runtime and is not persisted in local storage. Also, although the
+// accept/reject and user response is stored in the database, it is only unidirectional. Meaning, refreshing the page
+// will reset the states and the participant will have to re-accept/reject and respond to the advisors again. As such,
+// it is possible to have multiple responses to the same advisor.
 
 interface LocationState {
 	ratedMovies?: { [key: number]: MovieRating };
 }
-
-
-
 
 type AdvisorRecItemDetail = {
 	id: string; // This will likely be a UUID string
@@ -42,22 +45,21 @@ const AdvisorsPage: React.FC<StudyPageProps> = ({
 	sizeWarning
 }) => {
 
-	const participant: Participant | null = useRecoilValue(participantState);
-	const studyStep: StudyStep | null = useRecoilValue(studyStepState);
+	const location = useLocation();
+	const stateData = location.state as LocationState;
 
 	const { studyApi } = useStudy();
 	const navigate = useNavigate();
-	const location = useLocation();
 
-	const stateData = location.state as LocationState;
+	const [advisors, setAdvisors] = useRecoilState(advisorsMapState);
+
+	const participant: Participant | null = useRecoilValue(participantState);
+	const studyStep: StudyStep | null = useRecoilValue(studyStepState);
+
 	const [ratedMovies, setRatedMovies] = useState(new Map<string, MovieRating>());
 
 	const [loading, setLoading] = useState(false);
 	const [nextButtonDisabled, setNextButtonDisabled] = useState(true);
-
-	const [advisorDetails, setAdvisorDetails] =
-		useState<Map<string, AdvisorProfile>>(
-			new Map<string, AdvisorProfile>());
 
 	useEffect(() => {
 		if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
@@ -86,14 +88,14 @@ const AdvisorsPage: React.FC<StudyPageProps> = ({
 			});
 			let itemMap = new Map<string, AdvisorProfile>();
 			for (let item of responseItems) { itemMap.set(item.id, item); }
-			setAdvisorDetails(itemMap);
+			setAdvisors(itemMap);
 		} catch (error) {
 			console.error("Error fetching recommendations:", error);
 		} finally {
 			setLoading(false);
 
 		}
-	}, [studyApi, participant, studyStep]);
+	}, [studyApi, participant, studyStep, setAdvisors]);
 
 	useEffect(() => {
 		if (!participant || !studyStep) {
@@ -139,6 +141,13 @@ const AdvisorsPage: React.FC<StudyPageProps> = ({
 		}
 	}, [ratedMovies, stateData, getRecommendations, participant, studyStep]);
 
+	useEffect(() => {
+		if (advisors.size > 0) {
+			const allResponded = Array.from(advisors.values()).every(advisor => advisor.responded);
+			setNextButtonDisabled(!allResponded);
+		}
+
+	}, [advisors]);
 
 	const handleNextBtn = useCallback(async () => {
 		if (!participant || !studyStep) {
@@ -168,17 +177,14 @@ const AdvisorsPage: React.FC<StudyPageProps> = ({
 			<Row>
 				<Header title={studyStep?.name} content={studyStep?.description} />
 			</Row>
-			{loading || advisorDetails.size === 0 ?
+			{loading || advisors.size === 0 ?
 				<LoadingScreen
-					loading={loading || advisorDetails.size === 0}
+					loading={loading || advisors.size === 0}
 					message={'Please wait while the system prepares your recommendations'}
 					byline={"This may take a while."}
 				/>
 				:
-				<AdvisorsWidget
-					participantId={participant.id}
-					currentAdvisors={advisorDetails}
-				/>
+				<AdvisorsWidget />
 			}
 			<Row>
 				<Footer callback={handleNextBtn} disabled={nextButtonDisabled} text={"Next"} />
