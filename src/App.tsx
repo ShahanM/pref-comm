@@ -1,7 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { ThemeProvider, Toast, ToastContainer } from 'react-bootstrap';
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { redirect, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { useRecoilState } from 'recoil';
 import {
 	Participant,
@@ -21,6 +21,7 @@ import './styles/components.css';
 import './styles/main.css';
 import { RETRY_DELAYS_MS, STRINGS } from './utils/constants';
 import { WarningDialog } from './widgets/dialogs/warningDialog';
+import FinalPage from './pages/FinalPage';
 
 
 const customBreakpoints = {
@@ -257,14 +258,22 @@ function App() {
 								/>
 							} />
 
-							<Route path="/feedback" element={ 
+							<Route path="/feedback" element={
 								<FeedbackPage
-									next="/quit"
+									next="/endstudy"
 									checkpointUrl={checkpointUrl}
 									onStepUpdate={handleStepUpdate}
 									sizeWarning={showWarning}
 								/>
+							} />
 
+							<Route path="/endstudy" element={
+								<FinalPage
+									next="/"
+									checkpointUrl={checkpointUrl}
+									sizeWarning={showWarning}
+									onStudyDone={() => { redirect('/'); }}
+								/>
 							} />
 							<Route path="/quit" element={<h1>Thank you for participating!</h1>} />
 						</Routes>
