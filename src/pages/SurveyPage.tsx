@@ -222,7 +222,7 @@ const Survey: React.FC<StudyPageProps> = ({
 			}
 		} else {
 			// If not the last page, fetch the next page
-			studyApi.get<SurveyPage>(`survey/${studyStep.id}/page/${surveyPage?.id}/next`)
+			studyApi.get<SurveyPage>(`survey/${studyStep.id}/pages/${surveyPage?.id}/next`)
 				.then((surveyPage: SurveyPage) => {
 					setSurveyPage(surveyPage);
 					// setSurveyResponse(new Map<string, SurveyItemResponse>());
