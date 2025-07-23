@@ -1,15 +1,15 @@
-import React, { useCallback, useEffect, useReducer, useState } from "react";
+import React, { act, useEffect, useReducer, useState } from "react";
 import { Button, Container, Row } from "react-bootstrap";
-import { useStudy } from "rssa-api";
 import {
 	AdviceSelectionAction,
 	AdviceSelectionButtonProps,
 	AdviceSelectionButtonState,
 	AdviceSelectionWidgetProps,
-	UserResponsePanelProps,
-	UserSelectionResponse
+	UserResponsePanelProps
 } from "../Advisor.types";
 import RecommendationForm from "./RecommendationForm";
+import { useRecoilValue } from "recoil";
+import { activeAdvisorSelector } from "../../../state/advisorState";
 
 
 const initialState: AdviceSelectionButtonState = {
@@ -77,32 +77,11 @@ const AdviceSelectionButtonGroup: React.FC<AdviceSelectionButtonProps> = ({ onAc
 
 const AdviceSelectionWidget: React.FC<AdviceSelectionWidgetProps> = ({
 	avatarName,
-	participantId,
 	onSelection,
 	advisorId
 }) => {
 
-	const { studyApi } = useStudy();
-
 	const [loading, setLoading] = useState(false);
-
-	const submitChoice = useCallback(
-		(advisorId: number, selection: string) => {
-			setLoading(true);
-			studyApi.post<UserSelectionResponse,
-				boolean>("prefComm/advisors/", {
-					user_id: participantId,
-					advisor_id: advisorId,
-					selection: selection
-				}).then((booleanResponse: boolean) => {
-					if (booleanResponse) {
-						onSelection(advisorId, { selected: true });
-					}
-					setLoading(false);
-				}).catch((err: any) => {
-					console.log("Error", err);
-				});
-		}, [studyApi, participantId, onSelection]);
 
 
 	const handleAccept = () => {
@@ -110,7 +89,7 @@ const AdviceSelectionWidget: React.FC<AdviceSelectionWidgetProps> = ({
 	};
 
 	const handleReject = () => {
-		submitChoice(advisorId, "reject");
+		onSelection(advisorId, { selected: false });
 	};
 
 	return (
@@ -127,32 +106,39 @@ const AdviceSelectionWidget: React.FC<AdviceSelectionWidgetProps> = ({
 
 
 const UserResponsePanel: React.FC<UserResponsePanelProps> = ({
-	participantId,
-	advisor,
 	updateCallback,
 	avatar
 }) => {
-	const submitRecResponse = () => {
-		updateCallback(advisor.id, { responded: true });
-	}
 
+	const advisor = useRecoilValue(activeAdvisorSelector);
+
+	if (!advisor) {
+		return (
+			<Container className="advisor-recommendations-container">
+				<Row className="advisor-recommendations-header">
+					<h4>Recommendations</h4>
+				</Row>
+				<Row className="advisor-recommendations-content">
+					<p>Please select an advisor from the left panel.</p>
+				</Row>
+			</Container>
+		)
+	}
 	return (
 		<Container className="advisor-recommendations-container">
 			<Row className="advisor-recommendations-header">
 				<h4>Recommendations</h4>
 			</Row>
 			<Row className="advisor-recommendations-content">
-				{!advisor.selected ?
+				{advisor.selected === undefined ?
 					<AdviceSelectionWidget
-						participantId={participantId}
 						advisorId={advisor.id}
 						onSelection={updateCallback}
 						avatarName={avatar.name} />
 					:
 					<RecommendationForm
-						participantId={participantId}
 						advisor={advisor}
-						onSubmit={submitRecResponse}
+						// onSuccessfulResponse={updateCallback}
 						avatarName={avatar.name} />
 				}
 			</Row>

@@ -1,80 +1,40 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect } from "react";
 import { Col, Row } from "react-bootstrap";
-import { AdvisorProfile, AdvisorWidgetProps, Avatar, UserResponseFlag } from "../Advisor.types";
-import cow from "../assets/cow.jpeg";
-import duck from "../assets/duck.jpeg";
-import elephant from "../assets/elephant.jpeg";
-import fox from "../assets/fox.jpeg";
-import llama from "../assets/llama.jpeg";
-import tiger from "../assets/tiger.jpeg";
-import zebra from "../assets/zebra.jpeg";
-import AdvisorDetails from "./AdvisorDetails";
-import UserResponsePanel from "./UserResponsePanel";
-import AdvisorsNavigation from "./AdvisorsNavigation";
-import RecommendationForm from "./RecommendationForm";
+import { AdvisorWidgetProps, Avatar, UserResponseFlag } from "../Advisor.types";
+
+import { useRecoilState, useRecoilValue } from "recoil";
+import { activateAdvisorIdState, activeAdvisorSelector, advisorsMapState } from "../../../state/advisorState";
+import { AVATARS } from "../constants";
 import AdvisorPanel from "./AdvisorPanel";
+import AdvisorsNavigation from "./AdvisorsNavigation";
 
 
+const AdvisorsWidget: React.FC<AdvisorWidgetProps> = () => {
+	const [advisors, setAdvisors] = useRecoilState(advisorsMapState);
+	// const advisors = useRecoilValue(advisorsMapState);
+	const [activeAdvisorId, setActiveAdvisorId] = useRecoilState(activateAdvisorIdState);
 
+	// const [activeSelection, setActiveSelection] = useState<AdvisorProfile | undefined>(() => {
+	// 	const firstAdvisor = Array.from(advisors.values())[0];
+	// 	return firstAdvisor || undefined;
+	// });
 
-type AvatarMap = {
-	[key: string]: Avatar;
-}
-
-// TODO: Move this to a constants file
-const AVATARS: AvatarMap = {
-	cow: {
-		src: cow,
-		alt: 'Anonymous Cow',
-		name: 'Anonymous Cow'
-	},
-	duck: {
-		src: duck,
-		alt: 'Anonymous Duck',
-		name: 'Anonymous Duck'
-	},
-	elephant: {
-		src: elephant,
-		alt: 'Anonymous Elephant',
-		name: 'Anonymous Elephant'
-	},
-	zebra: {
-		src: zebra,
-		alt: 'Anonymous Zebra',
-		name: 'Anonymous Zebra'
-	},
-	llama: {
-		src: llama,
-		alt: 'Anonymous Llama',
-		name: 'Anonymous Llama'
-	},
-	fox: {
-		src: fox,
-		alt: 'Anonymous Fox',
-		name: 'Anonymous Fox'
-	},
-	tiger: {
-		src: tiger,
-		alt: 'Anonymous Tiger',
-		name: 'Anonymous Tiger'
-	}
-}
-
-
-const AdvisorsWidget: React.FC<AdvisorWidgetProps> = ({
-	participantId,
-	currentAdvisors
-}) => {
-	const [advisors, setAdvisors] = useState(new Map(currentAdvisors));
-	const [activeSelection, setActiveSelection] = useState<AdvisorProfile>();
-	const [approvalPressed, setApprovalPressed] = useState(false);
-	const [formData, setFormData] = useState({});
-	const [recommendationSubmitted, setRecommendationSubmitted] = useState(false);
+	useEffect(() => {
+		// if (currentAdvisors && currentAdvisors.size > 0) {
+		// setAdvisors(new Map(currentAdvisors));
+		if (advisors && advisors.size > 0 && !activeAdvisorId) {
+			const firstAdvisor = advisors.values().next().value;
+			if (firstAdvisor) {
+				setActiveAdvisorId(firstAdvisor.id);
+			}
+		}
+	}, [advisors, setActiveAdvisorId, activeAdvisorId]);
 
 	const avatarKeyMap = useCallback(() => {
 		const sortedAdvisorIds = Array.from(advisors.keys()).sort();
 		const avatarKeys = Object.keys(AVATARS);
-		const newMap = new Map<number, Avatar>();
+		const newMap = new Map<string, Avatar>();
+
 		for (let i = 0; i < sortedAdvisorIds.length; i++) {
 			const advisorKey = sortedAdvisorIds[i];
 			newMap.set(advisorKey, AVATARS[avatarKeys[i]]);
@@ -82,72 +42,56 @@ const AdvisorsWidget: React.FC<AdvisorWidgetProps> = ({
 		return newMap;
 	}, [advisors])
 
-	const getAdvisorAvatar = (advisorId: number) => {
+	const getAdvisorAvatar = useCallback((advisorId: string) => {
 		return avatarKeyMap().get(advisorId);
-	}
+	}, [avatarKeyMap]);
 
-	const handleSelect = (advisorId: number, idx: number) => {
-		const selectedAdvisor = advisors.get(advisorId);
-		setActiveSelection(selectedAdvisor);
-		setApprovalPressed(false);
-		setFormData({});
-		setRecommendationSubmitted(false);
-	};
+	const handleSelect = useCallback((advisorId: string) => {
+		setActiveAdvisorId(advisorId);
+	}, [setActiveAdvisorId]);
 
-	const handleAccept = (advisorId: number) => {
-		const selectedAdvisor = advisors.get(advisorId);
-		selectedAdvisor.status = "Accepted";
-		setApprovalPressed(true);
-		const newAdvisors = new Map(advisors);
-		newAdvisors.set(advisorId, selectedAdvisor);
-		setAdvisors(newAdvisors);
-	};
+	const handleAdvisorUpdate = useCallback((advisorId: string, response: UserResponseFlag) => {
 
-	const handleReject = (advisorId: number) => {
-		const selectedAdvisor = advisors.get(advisorId);
-		selectedAdvisor.status = "Rejected";
-		setApprovalPressed(true);
-		// const newAdvisors = mapReplace(advisors, "id", advisorId, (advisor) => {
-		//   return selectedAdvisor;
-		// });
-		const newAdvisors = new Map(advisors);
-		newAdvisors.set(advisorId, selectedAdvisor);
-		setAdvisors(newAdvisors);
-	};
+		setAdvisors(prevAdvisors => {
+			const selectedAdvisor = prevAdvisors.get(advisorId);
+			if (!selectedAdvisor) {
+				console.error(`Advisor with ID ${advisorId} not found.`);
+				return prevAdvisors;
+			}
+			const updatedAdvisor = { ...selectedAdvisor };
+			if (response.selected !== undefined) {
+				updatedAdvisor.selected = response.selected;
+			}
+			if (response.responded !== undefined) {
+				updatedAdvisor.responded = response.responded;
+			}
+			const newAdvisors = new Map(prevAdvisors);
+			newAdvisors.set(advisorId, updatedAdvisor);
 
-	const handleAdvisorUpdate = (advisorId: number, response: UserResponseFlag) => {
-		console.log("Advisor updated:", advisorId, response);
-		const selectedAdvisor = advisors.get(advisorId);
-		response.selected ? selectedAdvisor.selected = true : selectedAdvisor.selected = false;
-		response.responded ? selectedAdvisor.responded = true : selectedAdvisor.responded = false;
-		const newAdvisors = new Map(advisors);
-		newAdvisors.set(advisorId, selectedAdvisor);
-		setAdvisors(newAdvisors);
-	}
+			return newAdvisors;
+		});
 
-	// const handleRecommendationSubmit = (newFormData) => {
-	//   setFormData(newFormData);
-	//   setRecommendationSubmitted(true);
-	//   console.log("Form data:", newFormData);
-	// };
+		// setAdvisors(newAdvisors);
 
-	const handleRecommendationSubmit = (newFormData: any) => {
-		// do nothing
-	}
+		// if (activeSelection && activeSelection.id === advisorId) {
+		// 	setActiveSelection(updatedAdvisor);
+		// }
+	}, [setAdvisors]);
+
+	const activeSelection = useRecoilValue(activeAdvisorSelector);
 
 	return (
 		<Row className="advisors-widget-row">
 			<Col xs={2} xl={2} className="advisors-widget-column">
 				<AdvisorsNavigation
 					advisors={advisors}
-					activeSelection={activeSelection && activeSelection.id}
+					activeSelection={activeAdvisorId}
 					selectCallback={handleSelect}
 					getAdvisorAvatar={getAdvisorAvatar}
 				/>
 			</Col>
 			{activeSelection && (
-				<AdvisorPanel 
-					participantId={participantId}
+				<AdvisorPanel
 					advisor={activeSelection}
 					avatar={getAdvisorAvatar(activeSelection.id) as Avatar}
 					updateCallback={handleAdvisorUpdate} />
