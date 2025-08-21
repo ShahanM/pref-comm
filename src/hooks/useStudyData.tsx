@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRecoilState } from "recoil";
 import { Participant, RssaClientInterface, StudyStep } from "rssa-api";
-import { participantState, studyStepState } from "../state/studyState";
+import { participantState } from '../states/participantState';
+import { studyStepState } from "../states/studyStepState";
 import { useRetry } from "./useRetry";
 
 interface UseStudyDataResult {

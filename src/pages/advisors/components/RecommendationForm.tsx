@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, Form, Image, Row } from "react-bootstrap";
 import { useRecoilValue, useSetRecoilState } from "recoil";
 import { FreeFormTextResponseRequest, Participant, StudyStep, useStudy } from "rssa-api";
-import { participantState, studyStepState } from '../../../state/studyState';
+import { advisorsMapState } from "../../../states/advisorState";
+import { studyStepState } from '../../../states/studyStepState';
 import { Movie } from "../../../widgets/moviegrid/moviegriditem/MovieGridItem.types";
-import { AdvisorProfile, UserResponseFlag } from "../Advisor.types";
+import { AdvisorProfile } from "../Advisor.types";
+import { participantState } from '../../../states/participantState';
 import SearchMovieFormControl from "./SearchMovieFormControl";
-import { advisorsMapState } from "../../../state/advisorState";
 
 export interface UserRecommendationFormProps {
 	advisor: AdvisorProfile

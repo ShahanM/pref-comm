@@ -1,34 +1,23 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import Card from 'react-bootstrap/Card';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import { useLocation, useNavigate } from 'react-router-dom';
-import { useRecoilValue } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { CurrentStep, Participant, StudyStep, useStudy } from "rssa-api";
-import { participantState, studyStepState } from '../state/studyState';
-import HeaderJumbotron from '../widgets/headerJumbotron';
-import NextButton from '../widgets/nextButton';
+import { participantState } from '../states/participantState';
+import { studyStepState } from '../states/studyStepState';
+import Footer from '../widgets/Footer';
 import { StudyPageProps } from "./StudyPage.types";
 
 const SystemIntro: React.FC<StudyPageProps> = ({
     next,
-    checkpointUrl,
-    onStepUpdate
+    navigateToNextStep
 }) => {
 
-    const participant: Participant | null = useRecoilValue(participantState);
-    const studyStep: StudyStep | null = useRecoilValue(studyStepState);
+    const [participant, setParticipant] = useRecoilState(participantState);
+    const [studyStep, setStudyStep] = useRecoilState(studyStepState);
 
     const { studyApi } = useStudy();
-    const navigate = useNavigate();
-    const location = useLocation();
-
-
-    useEffect(() => {
-        if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
-            navigate(checkpointUrl);
-        }
-    }, [checkpointUrl, location.pathname, navigate]);
 
     const handleNextBtn = useCallback(async () => {
         if (!participant || !studyStep) {
@@ -36,26 +25,25 @@ const SystemIntro: React.FC<StudyPageProps> = ({
             return;
         }
         try {
-
-            const nextRouteStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
+            const nextStep: StudyStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
                 current_step_id: participant.current_step
             });
-            onStepUpdate(nextRouteStep, participant, next)
-            navigate(next);
-        } catch (error) {
-            console.error("Error fetching next step:", error);
-            // Handle error, e.g., show a message to the user
-        }
+            setStudyStep(nextStep);
+            const updatedParticipant: Participant = {
+                ...participant,
+                current_step: nextStep.id,
+            };
+            await studyApi.put('participants/', updatedParticipant);
+            setParticipant(updatedParticipant);
 
-    }, [studyApi, participant, studyStep, next, navigate, onStepUpdate]);
+            navigateToNextStep(next);
+        } catch (error) {
+            console.error("Error getting next to updating study progress", error);
+        }
+    }, [navigateToNextStep, next, participant, setParticipant, setStudyStep, studyApi, studyStep]);
 
     return (
         <Container>
-            <Row>
-                <HeaderJumbotron title="Introduction to the Peer Recommendation Platform"
-                    content="Welcome to the Peer Recommendation Platform" />
-            </Row>
-
             <Row>
                 <Card bg="light">
                     <Card.Body className="instructionblurb">
@@ -97,19 +85,7 @@ const SystemIntro: React.FC<StudyPageProps> = ({
                     </Card.Body>
                 </Card>
             </Row>
-
-            <Row>
-                <div className="jumbotron jumbotron-footer">
-                    <NextButton
-                        variant="ers"
-                        size="lg"
-                        className="footer-btn"
-                        onClick={handleNextBtn}
-                    >
-                        Get started
-                    </NextButton>
-                </div>
-            </Row>
+            <Footer callback={handleNextBtn} />
         </Container>
     )
 }

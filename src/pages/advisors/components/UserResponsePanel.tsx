@@ -9,7 +9,7 @@ import {
 } from "../Advisor.types";
 import RecommendationForm from "./RecommendationForm";
 import { useRecoilValue } from "recoil";
-import { activeAdvisorSelector } from "../../../state/advisorState";
+import { activeAdvisorSelector } from "../../../states/advisorState";
 
 
 const initialState: AdviceSelectionButtonState = {

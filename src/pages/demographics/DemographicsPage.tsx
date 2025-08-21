@@ -2,13 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, Container, Form, Row } from "react-bootstrap";
 import { CountryDropdown, RegionDropdown } from "react-country-region-selector";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useRecoilValue } from "recoil";
+import { useRecoilState } from "recoil";
 import { CurrentStep, Participant, StudyStep, useStudy } from "rssa-api";
-import { participantState, studyStepState } from "../../state/studyState";
+import Footer from '../../widgets/Footer';
+import { participantState } from '../../states/participantState';
+import { studyStepState } from "../../states/studyStepState";
 import { StudyPageProps } from "../StudyPage.types";
 import './DemographicsPage.css';
-import Footer from "../../components/Footer";
-import Header from "../../components/Header";
 
 
 
@@ -68,18 +68,14 @@ export type Demographic = {
 	state_region: string;
 };
 
-const DemographicsPage: React.FC<StudyPageProps> = ({
-	next,
-	checkpointUrl,
-	onStepUpdate
-}) => {
-
-	const participant: Participant | null = useRecoilValue(participantState);
-	const studyStep: StudyStep | null = useRecoilValue(studyStepState);
+const DemographicsPage: React.FC<StudyPageProps> = ({ next, navigateToNextStep }) => {
 
 	const { studyApi } = useStudy();
 	const navigate = useNavigate();
 	const location = useLocation();
+
+	const [participant, setParticipant] = useRecoilState(participantState);
+	const [studyStep, setStudyStep] = useRecoilState(studyStepState);
 
 	const [loading, setLoading] = useState<boolean>(false);
 	const [submitButtonDisabled, setSubmitButtonDisabled] = useState<boolean>(false);
@@ -120,12 +116,6 @@ const DemographicsPage: React.FC<StudyPageProps> = ({
 
 	const [hiddenGender, setHiddenGender] = useState<string>('hidden');
 	const [hiddenRace, setHiddenRace] = useState<string>('hidden');
-
-	useEffect(() => {
-		if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
-			navigate(checkpointUrl);
-		}
-	}, [checkpointUrl, location.pathname, navigate]);
 
 	useEffect(() => {
 		if (gender === 'Prefer to self-describe') {
@@ -187,23 +177,26 @@ const DemographicsPage: React.FC<StudyPageProps> = ({
 			return;
 		}
 		try {
-			const nextRouteStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
+			const nextStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
 				current_step_id: participant.current_step
 			});
-			onStepUpdate(nextRouteStep, participant, next);
-			navigate(next);
+			setStudyStep(nextStep);
+			const updatedParticipant: Participant = {
+				...participant,
+				current_step: nextStep.id,
+			};
+			await studyApi.put('participants/', updatedParticipant);
+			setParticipant(updatedParticipant);
+
+			navigateToNextStep(next);
 		} catch (error) {
 			console.error("Error fetching next step:", error);
 			// Handle error, e.g., show a message to the user
 		}
-	}, [onStepUpdate, studyApi, participant, next, navigate, studyStep]);
+	}, [studyApi, next, setStudyStep, setParticipant, navigateToNextStep, participant, studyStep]);
 
 	return (
 		<Container>
-			<Row>
-				<Header title={studyStep?.name}
-					content={studyStep?.description} />
-			</Row>
 			<Row className="demo-form">
 				<Form.Group className="mb-3" style={{ textAlign: "left" }}>
 					<Form.Label>What is your age?</Form.Label>
@@ -290,9 +283,7 @@ const DemographicsPage: React.FC<StudyPageProps> = ({
 					</Button>
 				</Form.Group>
 			</Row>
-			<Row>
-				<Footer callback={handleNextBtn} loading={loading} disabled={nextButtonDisabled} />
-			</Row>
+			<Footer callback={handleNextBtn} loading={loading} disabled={nextButtonDisabled} />
 		</Container>
 	)
 }

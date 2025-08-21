@@ -11,3 +11,11 @@ export const STRINGS = {
 }
 
 export const RETRY_DELAYS_MS = [1000, 3000, 5000, 10000, 20000];
+
+
+export const customBreakpoints = {
+	xl: 1200,
+	xxl: 1400,
+	xxxl: 1800, // Custom breakpoint for viewport size greater than 1800px
+	xl4: 2000
+};

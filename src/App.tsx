@@ -1,283 +1,146 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ThemeProvider, Toast, ToastContainer } from 'react-bootstrap';
-import { redirect, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
-import { useRecoilState } from 'recoil';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { useRecoilState, useRecoilValue } from 'recoil';
 import {
-	Participant,
 	StudyStep,
 	useStudy
 } from 'rssa-api';
-import AdvisorsPage from './pages/advisors/AdvisorsPage';
-import Demographics from './pages/demographics/DemographicsPage';
-import FeedbackPage from './pages/feedback/FeedbackPage';
-import MovieRatingPage from './pages/MovieRatingPage';
-import Survey from './pages/SurveyPage';
-import SystemIntro from './pages/SystemIntro';
-import Welcome from './pages/Welcome';
-import { participantState, studyStepState } from './state/studyState';
+import RouteWrapper from './pages/RouteWrapper';
+import { participantState } from './states/participantState';
+import { studyStepState } from './states/studyStepState';
 import './styles/App.css';
 import './styles/components.css';
 import './styles/main.css';
-import { RETRY_DELAYS_MS, STRINGS } from './utils/constants';
+import { customBreakpoints, RETRY_DELAYS_MS, STRINGS } from './utils/constants';
 import { WarningDialog } from './widgets/dialogs/warningDialog';
-import FinalPage from './pages/FinalPage';
-
-
-const customBreakpoints = {
-	xl: 1200,
-	xxl: 1400,
-	xxxl: 1800, // Custom breakpoint for viewport size greater than 1800px
-	xl4: 2000
-};
 
 
 function App() {
 
 	const { studyApi } = useStudy();
-	const [showWarning, setShowWarning] = useState<boolean>(false);
-	const [participant, setParticipant] = useRecoilState(participantState);
+
 	const [studyStep, setStudyStep] = useRecoilState(studyStepState);
-	const [checkpointUrl, setCheckpointUrl] = useState<string>('/');
-	const [studyError, setStudyError] = useState<boolean>(false);
+	const participant = useRecoilValue(participantState);
+
 	const [isLoading, setIsLoading] = useState<boolean>(true);
-
 	const [retryAttempt, setRetryAttempt] = useState<number>(0);
-	const [showToast, setShowToast] = useState<boolean>(false);
+	const [fetchError, setFetchError] = useState<boolean>(false);
+	const [studyError, setStudyError] = useState<boolean>(false);
+	const [showWarning, setShowWarning] = useState<boolean>(false);
+	const [currentFetchTrigger, setCurrentFetchTrigger] = useState<number>(0);
 
-	const handleStepUpdate = useCallback(
-		async (step: StudyStep, currentParticipant: Participant, referrer: string) => {
-			const newParticipant: Participant = {
-				...currentParticipant,
-				current_step: step.id,
-			};
-			try {
-				studyApi.put('participants/', newParticipant).then(() => {
-					localStorage.setItem('participant', JSON.stringify(newParticipant));
-					localStorage.setItem('studyStep', JSON.stringify(step));
-					localStorage.setItem('lastUrl', referrer);
-				});
-				setParticipant(newParticipant);
-				setStudyStep(step);
-				setCheckpointUrl(referrer);
-				studyApi.setParticipantId(newParticipant.id);
-			} catch (error) {
-				console.error("Error updating participant", error);
-				setStudyError(true);
-			}
-		}, [studyApi, setParticipant, setStudyStep]);
-
+	/*
+	 * UseEffect to handle window resize events.
+	 * Trigger conditions:
+	 * 	- On component mount but sets a listener on window resize.
+	 */
 	useEffect(() => {
-		if (studyError && !isLoading) {
-			const nextDelay = RETRY_DELAYS_MS[retryAttempt];
-			if (nextDelay !== undefined) {
-				console.log(`Retrying fetch in ${nextDelay / 1000} seconds... (Attempt ${retryAttempt + 1})`);
-				setShowToast(true);
-				const timerId = setTimeout(() => {
-					setRetryAttempt((prev) => prev + 1);
-				}, nextDelay);
-
-				return () => {
-					clearTimeout(timerId);
-					setShowToast(false);
-				};
-			} else {
-				console.warn('Max retry attempts reached. Please refresh to try again.');
-				setShowToast(false);
+		const handleResize = () => {
+			if (window.innerWidth < 1200) {
+				setShowWarning(true);
+			} else if (window.innerWidth >= 1200) {
+				setShowWarning(false);
 			}
-		} else if (!studyError) {
-			setRetryAttempt(0);
-			setShowToast(false);
 		}
-	}, [studyError, isLoading, retryAttempt]);
-
-
-	useEffect(() => {
-		let isMounted = true;
-
-		const loadCachedData = () => {
-			const participantCache = localStorage.getItem('participant');
-			const studyStepCache = localStorage.getItem('studyStep');
-			const checkpointUrl = localStorage.getItem('lastUrl');
-
-			if (participantCache && studyStepCache) {
-				try {
-					const cparticipant = JSON.parse(participantCache);
-					const cstudyStep = JSON.parse(studyStepCache);
-
-					if (cparticipant) {
-						setParticipant(cparticipant);
-						studyApi.setParticipantId(cparticipant.id);
-					}
-					if (cstudyStep) { setStudyStep(cstudyStep); }
-					if (checkpointUrl) { setCheckpointUrl(checkpointUrl); }
-					return true;
-				} catch (error) {
-					console.error("Error parsing cached data", error);
-
-					localStorage.removeItem('participant');
-					localStorage.removeItem('studyStep');
-					localStorage.removeItem('lastUrl');
-					if (isMounted) {
-						setStudyError(true);
-					}
-				}
-			}
-			return false;
-		};
-
-		const fetchInitialData = async () => {
-			if (!isMounted) return;
-
-			setIsLoading(true);
-			try {
-				const fetchedStudyStep = await studyApi.get<StudyStep>('studies/steps/first');
-				if (isMounted) {
-					setStudyStep(fetchedStudyStep);
-					setStudyError(false);
-					setRetryAttempt(0);
-				}
-			} catch (error) {
-				console.error("Error fetching initial study data:", error);
-				if (isMounted) {
-					setStudyError(true);
-				}
-			} finally {
-				if (isMounted) {
-					setIsLoading(false);
-				}
-			}
-		};
-
-		if (!participant && !studyStep) {
-			if (!loadCachedData()) {
-				fetchInitialData();
-			} else {
-				setIsLoading(false);
-			}
-		} else {
-			setIsLoading(false);
-		}
-
-		return () => {
-			isMounted = false;
-		}
-	}, [studyApi, setParticipant, setStudyStep, participant, studyStep, studyError, retryAttempt]);
-
-	useEffect(() => {
-		const handleResize = () => { setShowWarning(window.innerWidth < 1200); }
-		handleResize();
 		window.addEventListener('resize', handleResize);
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
 
-	if (isLoading) { return <div>Loading...</div> }
+	/* UseEffect to handle retry logic for fetching study data.
+	 * Trigger conditions:
+	 * 	- When there is a fetch error and the study is not loading.
+	 */
+	useEffect(() => {
+		if (fetchError && !isLoading) {
+			const nextDelay = RETRY_DELAYS_MS[retryAttempt];
+
+			if (nextDelay !== undefined) {
+				console.log(`Retrying fetch in ${nextDelay / 1000} seconds... (Attempt ${retryAttempt + 1})`);
+				const timerId = setTimeout(() => {
+					setRetryAttempt(prev => prev + 1);
+					setCurrentFetchTrigger(prev => prev + 1);
+				}, nextDelay);
+
+				return () => clearTimeout(timerId);
+			} else {
+				console.warn("Max retry attempts reached. Please refresh to try again.");
+			}
+		}
+	}, [fetchError, isLoading, retryAttempt, setRetryAttempt]);
+
+	/*
+	 * UseEffect to fetch the initial study step.
+	 * Trigger conditions:
+	 * 	- On component mount.
+	 *  - On retry trigger in error state. See RETRY_DELAYS_MS for number of retries.
+	 */
+	useEffect(() => {
+		const fetchInitialData = async () => {
+			try {
+				setIsLoading(true);
+				// const studyStep = await studyApi.get<StudyStep>('studies/steps/first');
+				if (!participant) {
+					studyApi.get<StudyStep>('studies/steps/first')
+						.then((studyStep: StudyStep) => {
+							setStudyStep(studyStep);
+							setStudyError(false);
+						});
+				} else {
+					studyApi.get<StudyStep>(`steps/${participant.current_step}`)
+						.then((studyStep: StudyStep) => {
+							setStudyStep(studyStep);
+							setStudyError(false);
+						});
+				}
+			} catch (error) {
+				console.error("Error fetching initial study data:", error);
+				setStudyError(true);
+				setFetchError(true);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		if (!studyStep) {
+			fetchInitialData();
+		} else {
+			setIsLoading(false);
+		}
+	}, [studyApi, setStudyStep, studyStep, currentFetchTrigger, setStudyError, participant]);
+
+	if (isLoading) { return <div>Loading...</div> } // FIXME: Make this a proper loader
 
 	return (
 		<ThemeProvider breakpoints={Object.keys(customBreakpoints)}>
 			<div className="App">
-				{showWarning && <WarningDialog show={showWarning} title="Warning"
-					message={STRINGS.WINDOW_TOO_SMALL} disableHide={true} />
+				{showWarning &&
+					<WarningDialog
+						show={showWarning}
+						title="Warning"
+						message={STRINGS.WINDOW_TOO_SMALL}
+						disableHide={true} />
 				}
 				{studyError && (
-					<ToastContainer position="top-center" className="p-3">
-						<Toast bg="danger" show={showToast} onClose={() => setShowToast(false)} autohide={false}>
-							<Toast.Body className="text-white">
-								{RETRY_DELAYS_MS[retryAttempt] === undefined ? (
-									<>
-										{STRINGS.STUDY_ERROR} <br /> Max retry attempts reached. Please refresh to try again.
-									</>
-								) : (
-									<>
-										There was an error registering this study. Retrying in{' '}
-										{RETRY_DELAYS_MS[retryAttempt] / 1000} seconds...
-									</>
-								)}
-							</Toast.Body>
-						</Toast>
-					</ToastContainer>
-				)}
-				<Router basename='/preference-community'>
-					<Suspense fallback={<div>Loading...</div>}>
-						<Routes>
-							<Route path="/" element={
-								<Welcome
-									next="/demographics"
-									checkpointUrl={checkpointUrl}
-									setNewParticipant={setParticipant}
-									onStepUpdate={handleStepUpdate}
-									sizeWarning={showWarning}
-								/>
-							} />
-							<Route path="/presurvey" element={
-								<Survey
-									next="/systemintro"
-									checkpointUrl={checkpointUrl}
-									onStepUpdate={handleStepUpdate}
-									sizeWarning={showWarning}
-								/>
-							} />
-							<Route path="/systemintro" element={
-								<SystemIntro
-									next="/ratemovies"
-									checkpointUrl={checkpointUrl}
-									onStepUpdate={handleStepUpdate}
-									sizeWarning={showWarning}
-								/>
-							} />
-							<Route path="/ratemovies" element={
-								<MovieRatingPage
-									next="/advisors"
-									checkpointUrl={checkpointUrl}
-									onStepUpdate={handleStepUpdate}
-									sizeWarning={showWarning}
-								/>
-							} />
-							<Route path="/advisors" element={
-								<AdvisorsPage
-									next="/postsurvey"
-									checkpointUrl={checkpointUrl}
-									onStepUpdate={handleStepUpdate}
-									sizeWarning={showWarning}
-								/>
-							} />
-							<Route path="/demographics" element={
-								<Demographics
-									next="/presurvey"
-									checkpointUrl={checkpointUrl}
-									onStepUpdate={handleStepUpdate}
-									sizeWarning={showWarning}
-								/>
-							} />
-							<Route path="/postsurvey" element={
-								<Survey
-									next="/feedback"
-									checkpointUrl={checkpointUrl}
-									onStepUpdate={handleStepUpdate}
-									sizeWarning={showWarning}
-								/>
-							} />
-
-							<Route path="/feedback" element={
-								<FeedbackPage
-									next="/endstudy"
-									checkpointUrl={checkpointUrl}
-									onStepUpdate={handleStepUpdate}
-									sizeWarning={showWarning}
-								/>
-							} />
-
-							<Route path="/endstudy" element={
-								<FinalPage
-									next="/"
-									checkpointUrl={checkpointUrl}
-									sizeWarning={showWarning}
-									onStudyDone={() => { redirect('/'); }}
-								/>
-							} />
-							<Route path="/quit" element={<h1>Thank you for participating!</h1>} />
-						</Routes>
-					</Suspense>
+					RETRY_DELAYS_MS[retryAttempt] === undefined ?
+						<WarningDialog
+							show={studyError}
+							title="Error"
+							message={STRINGS.STUDY_ERROR} />
+						:
+						<ToastContainer position="top-center" className="p-3">
+							<Toast bg="danger" autohide={true} delay={RETRY_DELAYS_MS[retryAttempt]}>
+								<Toast.Body className={"text-white"}>
+									There was an error registering this study.
+									Retrying in {RETRY_DELAYS_MS[retryAttempt] / 1000} seconds...
+								</Toast.Body>
+							</Toast>
+						</ToastContainer>
+				)
+				}
+				<Router basename='/preference-community/'>
+					<RouteWrapper />
 				</Router>
 			</div>
 		</ThemeProvider>

@@ -3,7 +3,7 @@ import { Col, Row } from "react-bootstrap";
 import { AdvisorWidgetProps, Avatar, UserResponseFlag } from "../Advisor.types";
 
 import { useRecoilState, useRecoilValue } from "recoil";
-import { activateAdvisorIdState, activeAdvisorSelector, advisorsMapState } from "../../../state/advisorState";
+import { activateAdvisorIdState, activeAdvisorSelector, advisorsMapState } from "../../../states/advisorState";
 import { AVATARS } from "../constants";
 import AdvisorPanel from "./AdvisorPanel";
 import AdvisorsNavigation from "./AdvisorsNavigation";
@@ -82,7 +82,7 @@ const AdvisorsWidget: React.FC<AdvisorWidgetProps> = () => {
 
 	return (
 		<Row className="advisors-widget-row">
-			<Col xs={2} xl={2} className="advisors-widget-column">
+			<Col md={2} xs={2} xl={2} className="advisors-widget-column">
 				<AdvisorsNavigation
 					advisors={advisors}
 					activeSelection={activeAdvisorId}

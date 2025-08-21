@@ -1,23 +1,23 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Row } from "react-bootstrap";
 import Container from "react-bootstrap/Container";
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useRecoilState, useRecoilValue } from "recoil";
 import {
 	CurrentStep,
 	Participant, StudyStep,
 	useStudy
 } from "rssa-api";
-import { participantState, studyStepState } from "../../state/studyState";
+import { advisorsMapState } from "../../states/advisorState";
+import { participantState } from '../../states/participantState';
+import { ratedMoviesState } from "../../states/ratedMoviesState";
+import { studyStepState } from "../../states/studyStepState";
 import Footer from "../../widgets/Footer";
-import Header from "../../widgets/Header";
 import LoadingScreen from '../../widgets/loadingscreen/LoadingScreen';
 import { MovieRating } from "../../widgets/moviegrid/moviegriditem/MovieGridItem.types";
 import { StudyPageProps } from '../StudyPage.types';
 import { AdvisorProfile } from "./Advisor.types";
 import AdvisorsWidget from "./components/AdvisorsWidget";
 import "./components/css/AdvisorsComponent.css";
-import { advisorsMapState } from "../../state/advisorState";
 
 
 // Note: The state of advisors is maintained at runtime and is not persisted in local storage. Also, although the
@@ -38,36 +38,25 @@ type AdvisorRequestObj = {
 	// TODO: Add the rest of the fields by checking the API request
 }
 
-const AdvisorsPage: React.FC<StudyPageProps> = ({
-	next,
-	checkpointUrl,
-	onStepUpdate,
-	sizeWarning
-}) => {
+const AdvisorsPage: React.FC<StudyPageProps> = ({ next, navigateToNextStep }) => {
 
-	const location = useLocation();
-	const stateData = location.state as LocationState;
+	// const location = useLocation();
+	// const stateData = location.state as LocationState;
 
 	const { studyApi } = useStudy();
 	const navigate = useNavigate();
 
 	const [advisors, setAdvisors] = useRecoilState(advisorsMapState);
 
-	const participant: Participant | null = useRecoilValue(participantState);
-	const studyStep: StudyStep | null = useRecoilValue(studyStepState);
+	const [participant, setParticipant] = useRecoilState(participantState);
+	const [studyStep, setStudyStep] = useRecoilState(studyStepState);
 
-	const [ratedMovies, setRatedMovies] = useState(new Map<string, MovieRating>());
+	const ratedMovies: Map<string, MovieRating> = useRecoilValue(ratedMoviesState);
 
 	const [loading, setLoading] = useState(false);
 	const [nextButtonDisabled, setNextButtonDisabled] = useState(true);
 
-	useEffect(() => {
-		if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
-			navigate(checkpointUrl);
-		}
-	}, [checkpointUrl, location.pathname, navigate]);
-
-	const getRecommendations = useCallback(async (ratings: Map<string, MovieRating>) => {
+	const getRecommendations = useCallback(async () => {
 		if (!participant || !studyStep) {
 			console.warn("AdvisorsPage or participant is undefined in getRecommendations.");
 			return null;
@@ -79,11 +68,8 @@ const AdvisorsPage: React.FC<StudyPageProps> = ({
 				user_id: participant.id,
 				user_condition: participant.condition_id,
 				is_baseline: 1, // FIXME: this should be based on the participant condition, not hardcoded
-				ratings: [...ratings.values()].map(rating => {
-					return {
-						item_id: rating.movielens_id,
-						rating: rating.rating
-					}
+				ratings: [...ratedMovies.values()].map(rating => {
+					return { item_id: rating.movielens_id, rating: rating.rating };
 				})
 			});
 			let itemMap = new Map<string, AdvisorProfile>();
@@ -95,51 +81,8 @@ const AdvisorsPage: React.FC<StudyPageProps> = ({
 			setLoading(false);
 
 		}
-	}, [studyApi, participant, studyStep, setAdvisors]);
-
-	useEffect(() => {
-		if (!participant || !studyStep) {
-			console.warn("AdvisorsPage or participant is undefined in useEffect.");
-			return;
-		}
-
-		if (ratedMovies.size === 0) {
-			if (stateData && stateData.ratedMovies) {
-				const ratedMoviesData = new Map<string, MovieRating>();
-				for (let key in stateData.ratedMovies) {
-					let moviedata = stateData.ratedMovies[key];
-					ratedMoviesData.set(moviedata.id, moviedata);
-				}
-				setRatedMovies(ratedMoviesData);
-			} else {
-				const storedRatedMovies = localStorage.getItem('ratedMoviesData');
-				if (storedRatedMovies) {
-					try {
-						const ratedMovieCache: { [key: string]: MovieRating } = JSON.parse(storedRatedMovies);
-						const ratedMovieData = new Map<string, MovieRating>();
-						for (let key in ratedMovieCache) {
-							const movie = ratedMovieCache[key];
-							ratedMovieData.set(movie.id, ratedMovieCache[key]);
-						}
-						setRatedMovies(ratedMovieData);
-					} catch (error) {
-						console.error("Error parsing rated movies from local storage:", error);
-						// TODO: Clear stored local data and redirect to start of study
-						// localStorage.removeItem('ratedMoviesData');
-						// navigate('/'); // Example redirection
-					}
-				} else {
-					console.error("No rated movies found in state or local storage.");
-					// TODO: Clear stored local data and redirect to start of study
-					// localStorage.removeItem('ratedMoviesData');
-					// navigate('/'); // Example redirection
-				}
-			}
-		}
-		if (ratedMovies.size > 0) {
-			getRecommendations(ratedMovies);
-		}
-	}, [ratedMovies, stateData, getRecommendations, participant, studyStep]);
+	}, [studyApi, participant, studyStep, setAdvisors, ratedMovies]);
+	useEffect(() => { getRecommendations(); }, [getRecommendations]);
 
 	useEffect(() => {
 		if (advisors.size > 0) {
@@ -155,18 +98,24 @@ const AdvisorsPage: React.FC<StudyPageProps> = ({
 			return;
 		}
 		try {
-			const nextRouteStep: StudyStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
+			const nextStep: StudyStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
 				current_step_id: participant.current_step
 			});
-			onStepUpdate(nextRouteStep, participant, next);
-			navigate(next);
+			setStudyStep(nextStep);
+			const updatedParticipant: Participant = {
+				...participant,
+				current_step: nextStep.id,
+			};
+			await studyApi.put('participants/', updatedParticipant);
+			setParticipant(updatedParticipant);
+			navigateToNextStep(next);
 		} catch (error) {
 			console.error("Error fetching next step:", error);
 			// Handle error appropriately, e.g., show a notification or alert
 		} finally {
 			setLoading(false);
 		}
-	}, [studyApi, participant, onStepUpdate, next, studyStep, navigate]);
+	}, [studyApi, participant, next, studyStep, setStudyStep, setParticipant, navigateToNextStep]);
 
 	if (!participant || !studyStep) {
 		return <LoadingScreen loading={true} message="Initializing study data..." />;
@@ -174,9 +123,6 @@ const AdvisorsPage: React.FC<StudyPageProps> = ({
 
 	return (
 		<Container>
-			<Row>
-				<Header title={studyStep?.name} content={studyStep?.description} />
-			</Row>
 			{loading || advisors.size === 0 ?
 				<LoadingScreen
 					loading={loading || advisors.size === 0}
@@ -186,9 +132,7 @@ const AdvisorsPage: React.FC<StudyPageProps> = ({
 				:
 				<AdvisorsWidget />
 			}
-			<Row>
-				<Footer callback={handleNextBtn} disabled={nextButtonDisabled} text={"Next"} />
-			</Row>
+			<Footer callback={handleNextBtn} disabled={nextButtonDisabled} text={"Next"} />
 		</Container>
 	)
 }

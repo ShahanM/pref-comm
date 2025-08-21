@@ -1,5 +1,6 @@
 import DOMPurify from "dompurify";
 import parse from "html-react-parser";
+import { Row } from "react-bootstrap";
 
 export default function HeaderJumbotron(props) {
 
@@ -9,11 +10,13 @@ export default function HeaderJumbotron(props) {
 	const parsed = parse(clean);
 
 	return (
-		<div className="jumbotron">
-			<h1 className="header">{props.title}</h1>
-			<div style={{ width: "fit-content", margin: "auto", textAlign: "left" }}>
-				{parsed}
+		<Row>
+			<div className="jumbotron">
+				<h1 className="header">{props.title}</h1>
+				<div style={{ width: "fit-content", margin: "auto", textAlign: "left" }}>
+					{parsed}
+				</div>
 			</div>
-		</div>
+		</Row>
 	)
 }

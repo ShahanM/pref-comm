@@ -1,14 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Button, Container, Form, Row } from "react-bootstrap";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useRecoilValue } from "recoil";
+import { useRecoilState } from "recoil";
 import { CurrentStep, Participant, StudyStep, useStudy } from "rssa-api";
-import { participantState, studyStepState } from "../../state/studyState";
+import { participantState } from '../../states/participantState';
+import { studyStepState } from "../../states/studyStepState";
+import { WarningDialog } from "../../widgets/dialogs/warningDialog";
 import Footer from "../../widgets/Footer";
 import HeaderJumbotron from "../../widgets/headerJumbotron";
 import { StudyPageProps } from "../StudyPage.types";
 import "./FeedbackPage.css";
-import { WarningDialog } from "../../widgets/dialogs/warningDialog";
 
 
 export type Feedback = {
@@ -19,14 +20,10 @@ export type Feedback = {
 };
 
 
-const FeedbackPage: React.FC<StudyPageProps> = ({
-	next,
-	checkpointUrl,
-	onStepUpdate
-}) => {
+const FeedbackPage: React.FC<StudyPageProps> = ({ next, navigateToNextStep }) => {
 
-	const participant: Participant | null = useRecoilValue(participantState);
-	const studyStep: StudyStep | null = useRecoilValue(studyStepState);
+	const [participant, setParticipant] = useRecoilState(participantState);
+	const [studyStep, setStudyStep] = useRecoilState(studyStepState);
 
 	const { studyApi } = useStudy();
 	const navigate = useNavigate();
@@ -38,12 +35,6 @@ const FeedbackPage: React.FC<StudyPageProps> = ({
 	const [showWarning, setShowWarning] = useState<boolean>(false);
 	const feedbackRef = useRef<HTMLTextAreaElement>(null);
 
-
-	useEffect(() => {
-		if (checkpointUrl !== '/' && checkpointUrl !== location.pathname) {
-			navigate(checkpointUrl);
-		}
-	}, [checkpointUrl, location.pathname, navigate]);
 
 	const submitFeedback = useCallback(async (event: React.MouseEvent<HTMLButtonElement>) => {
 		if (!participant || !studyStep) {
@@ -93,18 +84,24 @@ const FeedbackPage: React.FC<StudyPageProps> = ({
 			return;
 		}
 		try {
-			const nextRouteStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
+			const nextStep = await studyApi.post<CurrentStep, StudyStep>('studies/steps/next', {
 				current_step_id: participant.current_step
 			});
-			onStepUpdate(nextRouteStep, participant, next);
-			navigate(next);
+			setStudyStep(nextStep);
+			const updatedParticipant: Participant = {
+				...participant,
+				current_step: nextStep.id,
+			};
+			await studyApi.put('participants/', updatedParticipant);
+			setParticipant(updatedParticipant);
+			navigateToNextStep(next);
 		} catch (error) {
 			console.error("Error fetching next step:", error);
 			// Handle error, e.g., show a message to the user
 		} finally {
 			setLoading(false);
 		}
-	}, [studyApi, participant, onStepUpdate, next, navigate, studyStep]);
+	}, [studyApi, participant, next, studyStep, setStudyStep, navigateToNextStep, setParticipant]);
 
 
 	return (
