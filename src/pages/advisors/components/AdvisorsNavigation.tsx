@@ -149,31 +149,24 @@ interface RadialProgressProps {
 }
 
 const RadialProgress: React.FC<RadialProgressProps> = ({ totalSteps, currentStep = 0 }) => {
-    // Ensure currentStep is at least 1 for proper division and logic
     const effectiveStep = Math.max(1, currentStep);
 
     const isComplete = effectiveStep >= totalSteps;
 
-    // Calculate percentage and stroke offset
     const { percentage, strokeDashoffset } = useMemo(() => {
         const calculatedPercentage = Math.floor((effectiveStep / totalSteps) * 100);
         const offset = CIRCUMFERENCE - (calculatedPercentage / 100) * CIRCUMFERENCE;
         return { percentage: calculatedPercentage, strokeDashoffset: offset };
     }, [effectiveStep, totalSteps]);
 
-    // Determine the color class based on progress
     const progressColor = isComplete ? 'text-green-500' : percentage >= 50 ? 'text-amber-500' : 'text-amber-500';
 
     return (
-        // Changed to flex-col to stack the SVG/Icon and the text vertically
         <div className="flex flex-col items-center">
-            {/* --- Primary Visual Area (w-6 h-6) --- */}
             <div className="w-6 h-6 flex items-center justify-center">
                 {isComplete ? (
-                    // 1. Show CheckMark when complete and hide the circle
                     <CheckCircleIcon strokeWidth={2.5} className="size-24 text-green-600" />
                 ) : (
-                    // 2. Show Radial Progress when incomplete
                     <svg
                         className={classNames(
                             'w-6 h-6 transform -rotate-90 transition-all duration-500',
@@ -181,7 +174,6 @@ const RadialProgress: React.FC<RadialProgressProps> = ({ totalSteps, currentStep
                         )}
                         viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
                     >
-                        {/* Background Circle */}
                         <circle
                             className="text-gray-200"
                             strokeWidth={STROKE_WIDTH}
@@ -192,7 +184,6 @@ const RadialProgress: React.FC<RadialProgressProps> = ({ totalSteps, currentStep
                             cy={CENTER_COORDINATE}
                         />
 
-                        {/* Foreground Progress Arc */}
                         <circle
                             className="transition-all duration-500 ease-out"
                             strokeWidth={STROKE_WIDTH}
@@ -209,7 +200,6 @@ const RadialProgress: React.FC<RadialProgressProps> = ({ totalSteps, currentStep
                 )}
             </div>
 
-            {/* --- Status Text Area (Below the Visual) --- */}
             <div className="mt-1 whitespace-nowrap">
                 {isComplete ? (
                     <span className="text-[10px] text-green-600 font-bold leading-none">Done!</span>
