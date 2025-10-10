@@ -1,163 +1,315 @@
-import React, { useCallback, useEffect, useReducer, useState } from "react";
-import { Button, Container, Row } from "react-bootstrap";
-import { useStudy } from "rssa-api";
-import {
-	AdviceSelectionAction,
-	AdviceSelectionButtonProps,
-	AdviceSelectionButtonState,
-	AdviceSelectionWidgetProps,
-	UserResponsePanelProps,
-	UserSelectionResponse
-} from "../Advisor.types";
-import RecommendationForm from "./RecommendationForm";
+import { XMarkIcon } from '@heroicons/react/16/solid';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import clsx from 'clsx';
+import { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { useStudy } from 'rssa-api';
+import type {
+    AdviseResponse,
+    AdviseSelectionObject,
+    AdvisorProfile,
+    ParticipantResponsePayload,
+} from '../../../types/preferenceCommunity.types';
+import type { Movie } from '../../../types/rssa.types';
+import type { StudyLayoutContextType } from '../../../types/study.types';
+import AdviseChooser from './AdviseChooser';
+import MovieSearchInput from './MovieSearchInput';
 
-
-const initialState: AdviceSelectionButtonState = {
-	acceptButtonSelected: false,
-	rejectButtonSelected: false,
+interface MutationResult {
+    type: 'POST' | 'PATCH';
+    id: string;
+    advisor_id: number;
+    status: 'accepted' | 'rejected' | 'unselected';
+    suggested_movie: Movie | 'N/A';
+    rationale_text: string;
+    version: number;
 }
 
-const adviceSelectionButtonReducer = (
-	state: AdviceSelectionButtonState,
-	action: AdviceSelectionAction): AdviceSelectionButtonState => {
-	switch (action.type) {
-		case 'ACCEPT':
-			return {
-				acceptButtonSelected: true,
-				rejectButtonSelected: false,
-			};
-		case 'REJECT':
-			return {
-				acceptButtonSelected: false,
-				rejectButtonSelected: true,
-			};
-		case 'RESET':
-			return initialState;
-		default:
-			return state;
-	}
-}
-
-const AdviceSelectionButtonGroup: React.FC<AdviceSelectionButtonProps> = ({ onAccept, onReject, disabled, resetCondition }) => {
-	const [state, dispatch] = useReducer(adviceSelectionButtonReducer, initialState);
-
-	const handleAccept = () => {
-		dispatch({ type: 'ACCEPT' });
-		onAccept();
-	};
-
-	const handleReject = () => {
-		dispatch({ type: 'REJECT' });
-		onReject();
-	};
-
-	useEffect(() => {
-		dispatch({ type: 'RESET' })
-	}, [resetCondition]);
-
-	return (
-		<div className="buttons-container">
-			<Button
-				className={`recommendation-button accept-button ${state.acceptButtonSelected ? 'selected' : ''}`}
-				disabled={disabled}
-				onClick={handleAccept}
-			>
-				Accept Recommendation
-			</Button>
-			<Button
-				className={`recommendation-button reject-button ${state.rejectButtonSelected ? 'selected' : ''}`}
-				disabled={disabled}
-				onClick={handleReject}
-			>
-				Reject Recommendation
-			</Button>
-		</div>
-	)
-}
-
-const AdviceSelectionWidget: React.FC<AdviceSelectionWidgetProps> = ({
-	avatarName,
-	participantId,
-	onSelection,
-	advisorId
+const UserResponsePanel = ({
+    userResponse,
+    advisor,
+}: {
+    userResponse: AdviseResponse | undefined;
+    advisor: AdvisorProfile;
 }) => {
+    const [localResponseDraft, setLocalResponseDraft] = useState<AdviseSelectionObject | null>(null);
+    const [prevResponse, setPrevResponse] = useState<AdviseSelectionObject | null>(null);
 
-	const { studyApi } = useStudy();
+    const { studyStep } = useOutletContext<StudyLayoutContextType>();
+    const { studyApi } = useStudy();
+    const [isRationaleSaved, setIsRationaleSaved] = useState<boolean>(false);
 
-	const [loading, setLoading] = useState(false);
+    useEffect(() => {
+        if (userResponse) {
+            setLocalResponseDraft(userResponse.payload_json);
+            setPrevResponse(userResponse.payload_json);
+            setIsRationaleSaved(true);
+        } else {
+            setLocalResponseDraft({
+                advisor_id: advisor.id,
+                status: 'unselected',
+                suggested_movie: 'N/A',
+                rationale_text: '',
+            } as AdviseSelectionObject);
+            setPrevResponse(null);
+            setIsRationaleSaved(false);
+        }
+    }, [userResponse, advisor.id]);
 
-	const submitChoice = useCallback(
-		(advisorId: number, selection: string) => {
-			setLoading(true);
-			studyApi.post<UserSelectionResponse,
-				boolean>("prefComm/advisors/", {
-					user_id: participantId,
-					advisor_id: advisorId,
-					selection: selection
-				}).then((booleanResponse: boolean) => {
-					if (booleanResponse) {
-						onSelection(advisorId, { selected: true });
-					}
-					setLoading(false);
-				}).catch((err: any) => {
-					console.log("Error", err);
-				});
-		}, [studyApi, participantId, onSelection]);
+    const queryClient = useQueryClient();
+    const adviseMutation = useMutation({
+        mutationKey: ['adviseResponse'],
+        mutationFn: async (newResponse: AdviseSelectionObject): Promise<MutationResult> => {
+            const currentResponses = queryClient.getQueryData<AdviseResponse[]>(['adviseResponses']) || [];
+            const currentRecord = currentResponses.find(
+                (res) => res.payload_json.advisor_id === newResponse.advisor_id
+            );
 
+            const recordId = currentRecord?.id;
+            const recordVersion = currentRecord?.version;
+            if (recordId && recordVersion) {
+                const patchPayload: AdviseResponse = {
+                    id: recordId,
+                    payload_json: { ...newResponse },
+                    version: recordVersion,
+                };
+                console.log('PATCHPAYLOAD', patchPayload);
+                await studyApi.patch<AdviseResponse, void>(`responses/interactions/${recordId}`, patchPayload);
+                return {
+                    type: 'PATCH',
+                    id: recordId,
+                    advisor_id: newResponse.advisor_id,
+                    status: newResponse.status,
+                    suggested_movie: newResponse.suggested_movie,
+                    rationale_text: newResponse.rationale_text,
+                    version: recordVersion + 1,
+                };
+            } else {
+                const postPayload: ParticipantResponsePayload = {
+                    step_id: studyStep.id,
+                    step_page_id: null,
+                    context_tag: `community_pref-advisor-${advisor.id}`,
+                    payload_json: {
+                        advisor_id: advisor.id,
+                        status: newResponse.status,
+                        suggested_movie: newResponse.suggested_movie,
+                        rationale_text: newResponse.rationale_text,
+                    },
+                };
+                const response = await studyApi.post<ParticipantResponsePayload, AdviseResponse>(
+                    'responses/interactions/',
+                    postPayload
+                );
+                return {
+                    type: 'POST',
+                    id: response.id!,
+                    advisor_id: response.payload_json.advisor_id,
+                    status: response.payload_json.status,
+                    suggested_movie: response.payload_json.suggested_movie!,
+                    rationale_text: response.payload_json.rationale_text!,
+                    version: response.version || 1,
+                };
+            }
+        },
+        onSuccess: (result) => {
+            const newPayload: AdviseSelectionObject = {
+                status: result.status,
+                advisor_id: result.advisor_id,
+                suggested_movie: result.suggested_movie,
+                rationale_text: result.rationale_text,
+            };
 
-	const handleAccept = () => {
-		onSelection(advisorId, { selected: true });
-	};
+            queryClient.setQueryData<AdviseResponse[]>(
+                ['adviseResponses'],
+                (oldResponses: AdviseResponse[] | undefined) => {
+                    const existingResponses = oldResponses || [];
+                    const index = existingResponses.findIndex(
+                        (res) => res.payload_json.advisor_id === result.advisor_id
+                    );
 
-	const handleReject = () => {
-		submitChoice(advisorId, "reject");
-	};
+                    if (index === -1) {
+                        const newResponse: AdviseResponse = {
+                            id: result.id,
+                            version: result.version,
+                            payload_json: newPayload,
+                        };
+                        return [...existingResponses, newResponse];
+                    }
+                    return existingResponses.map((res, i) => {
+                        if (i === index) {
+                            return {
+                                ...res,
+                                payload_json: {
+                                    ...res.payload_json,
+                                    ...newPayload,
+                                },
+                                version: result.version,
+                            };
+                        }
+                        return res;
+                    });
+                }
+            );
+            setIsRationaleSaved(true);
+        },
+        onError: () => {
+            console.error('Failed to save response on the server.');
+            setLocalResponseDraft(prevResponse);
+        },
+    });
+    const { isPending, mutateAsync } = adviseMutation;
 
-	return (
-		<div className="centered-content">
-			<div className="question-container">
-				<p>How do you feel about <strong>{avatarName}</strong>'s recommendation?</p>
-			</div>
-			<AdviceSelectionButtonGroup onAccept={handleAccept} onReject={handleReject}
-				disabled={loading}
-				resetCondition={advisorId} />
-		</div>
-	)
-}
+    const handleSelection = (selection: 'accepted' | 'rejected' | 'unselected') => {
+        if (isPending) return;
+        const newStatus = selection === 'accepted' || selection === 'rejected' ? selection : 'unselected';
 
+        setPrevResponse(localResponseDraft);
+        const newDraft: AdviseSelectionObject = {
+            ...(localResponseDraft as AdviseSelectionObject),
+            advisor_id: advisor.id,
+            status: newStatus,
+        };
+        setLocalResponseDraft(newDraft);
 
-const UserResponsePanel: React.FC<UserResponsePanelProps> = ({
-	participantId,
-	advisor,
-	updateCallback,
-	avatar
+        if (newStatus !== 'unselected') {
+            mutateAsync(newDraft);
+        }
+    };
+
+    const handleMovieSelection = (selectedMovie: Movie | 'N/A' | null) => {
+        if (!selectedMovie || !localResponseDraft || isPending) return;
+        setPrevResponse(localResponseDraft);
+        const newDraft: AdviseSelectionObject = {
+            ...(localResponseDraft as AdviseSelectionObject),
+            advisor_id: advisor.id,
+            suggested_movie: selectedMovie,
+        };
+        setLocalResponseDraft(newDraft);
+        mutateAsync(newDraft);
+    };
+    const handleRationaleChange = (newText: string) => {
+        if (!localResponseDraft) return;
+        setIsRationaleSaved(false);
+        setLocalResponseDraft((prevDraft) => ({
+            ...(prevDraft as AdviseSelectionObject),
+            rationale_text: newText,
+        }));
+    };
+    const handleSaveRationale = () => {
+        if (!localResponseDraft) return;
+        setPrevResponse(localResponseDraft);
+        mutateAsync(localResponseDraft);
+    };
+
+    if (!advisor) return <>No advisor selected</>;
+    const currentRationale = localResponseDraft?.rationale_text || '';
+    const isRationaleValid = currentRationale.trim().length > 10;
+
+    return (
+        <div className="mt-1 ms-1 border border-gray-300 rounded-md">
+            <div className="p-3">
+                <h2 className="m-5">Recommendations</h2>
+            </div>
+            <div className="content-center m-3">
+                <p className="text-left my-5 p-3">
+                    How do you feel about <strong>{advisor.avatar?.name}</strong>'s recommendation?
+                </p>
+                <AdviseChooser onSelect={handleSelection} currentState={localResponseDraft?.status || 'unselected'} />
+
+                {localResponseDraft?.status !== 'unselected' &&
+                    !adviseMutation.isPending &&
+                    (localResponseDraft?.suggested_movie && localResponseDraft?.suggested_movie !== 'N/A' ? (
+                        <div className="text-left">
+                            <SelectedMovieBlock
+                                movie={localResponseDraft?.suggested_movie}
+                                onRemove={() => handleMovieSelection('N/A')}
+                            />
+                            <RationaleForm
+                                advisorName={advisor.avatar?.name}
+                                text={currentRationale}
+                                onTextChange={handleRationaleChange}
+                            />
+                            <button
+                                onClick={handleSaveRationale}
+                                disabled={!isRationaleValid || adviseMutation.isPending || isRationaleSaved}
+                                className={clsx(
+                                    'py-2 px-4 mt-4 rounded-lg font-medium transition-colors duration-200',
+                                    'cursor-pointer',
+                                    isRationaleValid && !isRationaleSaved
+                                        ? 'bg-amber-500 hover:bg-amber-600 text-gray-700'
+                                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                )}
+                            >
+                                {adviseMutation.isPending ? 'Saving...' : isRationaleSaved ? 'Saved' : 'Save'}
+                            </button>
+                        </div>
+                    ) : (
+                        <MovieSearchInput
+                            onItemSelected={handleMovieSelection}
+                            formLabel={`Recommend a movie to <strong>${advisor.avatar?.name}</strong>`}
+                        />
+                    ))}
+            </div>
+        </div>
+    );
+};
+
+const SelectedMovieBlock = ({ movie, onRemove }: { movie: Movie | 'N/A'; onRemove: () => void }) => {
+    console.log('SELECTEDMOVIE', movie);
+    if (!movie || movie === 'N/A') return <></>;
+    return (
+        <div className="relative flex my-3 p-3 bg-gray-300 rounded-lg shadow-inner">
+            <img src={movie.poster} alt={`Movie poster for ${movie.title}`} className="rounded size-36" />
+            <div className="m-3 w-54">
+                <p className="text-gray-900 font-medium">
+                    {movie.title} <span className="text-gray-600 font-normal">({movie.year})</span>
+                </p>
+            </div>
+
+            <button
+                type="button"
+                onClick={onRemove}
+                className={clsx(
+                    'cursor-pointer',
+                    'absolute top-0 right-0 m-1 p-1 rounded-full bg-red-500 text-white',
+                    'hover:bg-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-400'
+                )}
+                aria-label="Remove selected movie"
+            >
+                <XMarkIcon className="w-4 h-4" />
+            </button>
+        </div>
+    );
+};
+
+const RationaleForm = ({
+    advisorName,
+    text,
+    onTextChange,
+}: {
+    advisorName: string | undefined;
+    text: string;
+    onTextChange: (text: string) => void;
 }) => {
-	const submitRecResponse = () => {
-		updateCallback(advisor.id, { responded: true });
-	}
-
-	return (
-		<Container className="advisor-recommendations-container">
-			<Row className="advisor-recommendations-header">
-				<h4>Recommendations</h4>
-			</Row>
-			<Row className="advisor-recommendations-content">
-				{!advisor.selected ?
-					<AdviceSelectionWidget
-						participantId={participantId}
-						advisorId={advisor.id}
-						onSelection={updateCallback}
-						avatarName={avatar.name} />
-					:
-					<RecommendationForm
-						participantId={participantId}
-						advisor={advisor}
-						onSubmit={submitRecResponse}
-						avatarName={avatar.name} />
-				}
-			</Row>
-		</Container>
-	);
+    return (
+        <div className="mt-5">
+            <label htmlFor="rationale-textarea">Why do you recommend this movie to {advisorName}?</label>
+            <textarea
+                value={text}
+                title=""
+                placeholder="Enter response"
+                onChange={(evt) => onTextChange(evt.target.value)}
+                className={clsx(
+                    'rounded-md',
+                    'p-3 mt-1',
+                    'block w-full rounded-md border-amber-400',
+                    'shadow-sm focus:border-yellow-500 focus:ring-yellow-500',
+                    'sm:text-sm font-mono'
+                )}
+                name="rationale-textarea"
+            />
+        </div>
+    );
 };
 
 export default UserResponsePanel;
