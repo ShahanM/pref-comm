@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import LoadingText from '../components/LoadingText';
 
 export const WelcomeFooter: React.FC<{
     onStudyStart: () => void;
@@ -34,7 +33,7 @@ export const WelcomeFooter: React.FC<{
                     onClick={onStudyStart}
                     disabled={disabled}
                 >
-                    <span>{!loading ? text : <LoadingText text={'Loading...'} />}</span>
+                    <span>{!loading ? text : 'Loading...'}</span>
                 </button>
             </div>
         </div>

@@ -2,43 +2,25 @@ import { CheckCircleIcon } from '@heroicons/react/16/solid';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import React, { useEffect, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { useStudy } from 'rssa-api';
 import MovieCard from '../components/moviegallery/MovieCard';
 import PaginatedResourceViewer from '../components/PaginatedDataViewer';
 import { useStepCompletion } from '../hooks/useStepCompletion';
 import type { MovieDetails, RatedItem } from '../types/rssa.types';
-import type { StudyLayoutContextType } from '../types/study.types';
 
 const MovieRatingPage: React.FC = () => {
     const itemsPerPage = 18;
     const minRatingCount = 10;
 
     const { studyApi } = useStudy();
-    const { studyStep } = useOutletContext<StudyLayoutContextType>();
     const { setIsStepComplete } = useStepCompletion();
-
-    // const queryClient = useQueryClient();
 
     const { data: ratedMovies, isLoading } = useQuery({
         queryKey: ['movieRatings'],
-        queryFn: async () => await studyApi.get<RatedItem[]>(`responses/ratings/${studyStep.id}`),
+        queryFn: async () => await studyApi.get<RatedItem[]>(`responses/ratings/`),
         enabled: !!studyApi,
     });
 
-    // const handleRating = useCallback(
-    //     (ratedItem: RatedItem) => {
-    //         queryClient.setQueryData<RatedItem[]>(['movieRatings'], (oldData: RatedItem[] | undefined) => {
-    //             const existingRatings = oldData || [];
-    //             const existingItemIndex = existingRatings.findIndex((item) => item.item_id === ratedItem.item_id);
-    //             if (existingItemIndex > -1) {
-    //                 return existingRatings.map((item, index) => (index === existingItemIndex ? ratedItem : item));
-    //             }
-    //             return [...existingRatings, ratedItem];
-    //         });
-    //     },
-    //     [queryClient]
-    // );
     const ratedCount = ratedMovies?.length ?? 0;
 
     useEffect(() => {
@@ -62,7 +44,6 @@ const MovieRatingPage: React.FC = () => {
                                             movie={movie}
                                             userRating={ratedMovie}
                                             onClick={() => handleItemClick(movie)}
-                                            // onRated={handleRating}
                                         />
                                     );
                                 })
@@ -74,28 +55,6 @@ const MovieRatingPage: React.FC = () => {
                 </PaginatedResourceViewer>
                 <RatingProgress completed={ratedCount} total={minRatingCount} />
             </div>
-            {/* <div className="p-3">
-                <RankHolder count={ratedCount} max={minRatingCount} />
-            </div> */}
-        </div>
-    );
-};
-
-interface RankHolderProps {
-    count: number;
-    max: number;
-}
-
-const RankHolder: React.FC<RankHolderProps> = ({ count, max }) => {
-    return (
-        <div className="font-medium text-lg">
-            <span>Rated Movies: </span>
-            <span>
-                <i> {count} </i>
-            </span>
-            <span>
-                <i>of {max}</i>
-            </span>
         </div>
     );
 };
