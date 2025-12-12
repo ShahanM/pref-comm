@@ -1,7 +1,7 @@
 import { CheckCircleIcon } from '@heroicons/react/16/solid';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { useStudy } from 'rssa-api';
 import { useAdvisorSelection } from '../../../hooks/useAdvisorSelection';
@@ -11,24 +11,23 @@ import type {
     PreferenceCommResponseObject,
     RecommendationType,
 } from '../../../types/preferenceCommunity.types';
-import type { RatedItem } from '../../../types/rssa.types';
 import { type StudyLayoutContextType } from '../../../types/study.types';
+import { useStepCompletion } from 'rssa-study-template';
 import { AVATAR_IMGS } from '../advisorsMap';
 
 interface RecommendationRequestPayload {
     step_id: string;
-    step_page_id?: string;
-    context_tag: string;
-    rec_type: 'baseline' | 'reference' | 'diverse';
-
-    ratings: RatedItem[];
+    // step_page_id?: string;
+    // context_tag?: string;
+    // rec_type?: 'baseline' | 'reference' | 'diverse'; // Could include if needed by new endpoint via run_config
 }
+
 const AdvisorsNavigation = ({
-    ratedItems,
+    // ratedItems, // Removed
     condition,
     recommendationType = 'baseline',
 }: {
-    ratedItems: RatedItem[];
+    // ratedItems: RatedItem[];
     condition?: number;
     recommendationType?: RecommendationType;
 }) => {
@@ -36,21 +35,20 @@ const AdvisorsNavigation = ({
     const { studyApi } = useStudy();
 
     const { data: advisors, isLoading: recommendationsLoading } = useQuery({
-        queryKey: ['recommendations', condition, ratedItems?.map((item) => item.item_id)],
+        queryKey: ['recommendations', condition], // Removed ratedItems from key
         queryFn: async () => {
-            const payload = {
+            const contextData = {
                 step_id: studyStep.id,
                 context_tag: 'preference community advisor recommendations',
                 rec_type: recommendationType,
-                ratings: ratedItems,
             };
-            const response = await studyApi.post<RecommendationRequestPayload, PreferenceCommResponseObject>(
-                'recommendations/prefcomm',
-                payload
+            const response = await studyApi.post<any, PreferenceCommResponseObject>( // Payload type relaxed for now
+                'recommendations/',
+                contextData
             );
             return response;
         },
-        enabled: !!ratedItems,
+        enabled: !!studyStep, // Changed enabled condition
     });
 
     const { data: adviseResponses, isLoading } = useQuery({
@@ -61,7 +59,7 @@ const AdvisorsNavigation = ({
 
     const responseMap = useMemo(() => {
         if (!adviseResponses) return;
-        const newMap = new Map<number, number>();
+        const newMap = new Map<string, number>();
         adviseResponses.forEach((advRes) => {
             let count = 0;
             if (advRes.payload_json.status === 'accepted' || advRes.payload_json.status === 'rejected') count += 1;
@@ -74,6 +72,28 @@ const AdvisorsNavigation = ({
 
     console.log(adviseResponses);
     console.log(responseMap);
+
+    const { setIsStepComplete } = useStepCompletion();
+
+    useEffect(() => {
+        if (!advisors || !responseMap) {
+            setIsStepComplete(false);
+            return;
+        }
+
+        const advisorIds = Object.keys(advisors);
+        if (advisorIds.length === 0) {
+            setIsStepComplete(false);
+            return;
+        }
+
+        const allComplete = advisorIds.every((id) => {
+            const count = responseMap.get(id) || 0;
+            return count >= 3;
+        });
+
+        setIsStepComplete(allComplete);
+    }, [advisors, responseMap, setIsStepComplete]);
 
     if (recommendationsLoading) return <>Loading ...</>;
     if (!advisors) return <>Loading advisors</>;

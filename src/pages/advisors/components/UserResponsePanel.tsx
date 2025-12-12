@@ -18,7 +18,7 @@ import MovieSearchInput from './MovieSearchInput';
 interface MutationResult {
     type: 'POST' | 'PATCH';
     id: string;
-    advisor_id: number;
+    advisor_id: string;
     status: 'accepted' | 'rejected' | 'unselected';
     suggested_movie: Movie | 'N/A';
     rationale_text: string;
@@ -59,19 +59,21 @@ const UserResponsePanel = ({
     const queryClient = useQueryClient();
     const adviseMutation = useMutation({
         mutationKey: ['adviseResponse'],
-        mutationFn: async (newResponse: AdviseSelectionObject): Promise<MutationResult> => {
-            const currentResponses = queryClient.getQueryData<AdviseResponse[]>(['adviseResponses']) || [];
-            const currentRecord = currentResponses.find(
-                (res) => res.payload_json.advisor_id === newResponse.advisor_id
-            );
-
-            const recordId = currentRecord?.id;
-            const recordVersion = currentRecord?.version;
-            if (recordId && recordVersion) {
+        mutationFn: async ({
+            newResponse,
+            recordId,
+            fullRecord,
+        }: {
+            newResponse: AdviseSelectionObject;
+            recordId?: string;
+            fullRecord?: AdviseResponse;
+        }): Promise<MutationResult> => {
+            if (recordId && fullRecord) {
                 const patchPayload: AdviseResponse = {
+                    ...fullRecord,
                     id: recordId,
                     payload_json: { ...newResponse },
-                    version: recordVersion,
+                    version: fullRecord.version || 1,
                 };
                 console.log('PATCHPAYLOAD', patchPayload);
                 await studyApi.patch<AdviseResponse, void>(`responses/interactions/${recordId}`, patchPayload);
@@ -82,12 +84,12 @@ const UserResponsePanel = ({
                     status: newResponse.status,
                     suggested_movie: newResponse.suggested_movie,
                     rationale_text: newResponse.rationale_text,
-                    version: recordVersion + 1,
+                    version: (fullRecord.version || 1) + 1,
                 };
             } else {
                 const postPayload: ParticipantResponsePayload = {
-                    step_id: studyStep.id,
-                    step_page_id: null,
+                    study_step_id: studyStep.id,
+                    study_step_page_id: null,
                     context_tag: `community_pref-advisor-${advisor.id}`,
                     payload_json: {
                         advisor_id: advisor.id,
@@ -132,6 +134,9 @@ const UserResponsePanel = ({
                             id: result.id,
                             version: result.version,
                             payload_json: newPayload,
+                            study_step_id: studyStep.id,
+                            study_step_page_id: null,
+                            context_tag: `community_pref-advisor-${advisor.id}`,
                         };
                         return [...existingResponses, newResponse];
                     }
@@ -172,7 +177,7 @@ const UserResponsePanel = ({
         setLocalResponseDraft(newDraft);
 
         if (newStatus !== 'unselected') {
-            mutateAsync(newDraft);
+            mutateAsync({ newResponse: newDraft, recordId: userResponse?.id, fullRecord: userResponse });
         }
     };
 
@@ -185,7 +190,7 @@ const UserResponsePanel = ({
             suggested_movie: selectedMovie,
         };
         setLocalResponseDraft(newDraft);
-        mutateAsync(newDraft);
+        mutateAsync({ newResponse: newDraft, recordId: userResponse?.id, fullRecord: userResponse });
     };
     const handleRationaleChange = (newText: string) => {
         if (!localResponseDraft) return;
@@ -198,7 +203,7 @@ const UserResponsePanel = ({
     const handleSaveRationale = () => {
         if (!localResponseDraft) return;
         setPrevResponse(localResponseDraft);
-        mutateAsync(localResponseDraft);
+        mutateAsync({ newResponse: localResponseDraft, recordId: userResponse?.id, fullRecord: userResponse });
     };
 
     if (!advisor) return <>No advisor selected</>;

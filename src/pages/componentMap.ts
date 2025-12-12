@@ -1,10 +1,8 @@
+import { DemographicsPage, MovieRatingPage, SurveyPage } from 'rssa-study-template';
 import AdvisorsPage from './advisors/AdvisorsPage';
 import InformedConsent from './ConsentPage';
-import DemographicsPage from './DemographicsPage';
 import FeedbackPage from './FeedbackPage';
 import FinalPage from './FinalPage';
-import MovieRatingPage from './MovieRatingPage';
-import SurveyPage from './SurveyPage';
 import SystemIntroPage from './SystemIntroPage';
 
 export const componentMap: {

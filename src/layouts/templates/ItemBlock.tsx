@@ -104,7 +104,7 @@ const ItemBlock: React.FC<ItemBlockProps> = ({
                     scale_level_id: newScaleLevel,
                 };
                 const response = await studyApi.post<ItemResponsePayload, SurveyItemResponse>(
-                    'responses/survey',
+                    'responses/survey/',
                     postPayload
                 );
 

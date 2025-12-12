@@ -32,7 +32,6 @@ const ContentBlock: React.FC<ContentBlockProps> = ({ content, onComplete }) => {
         if (answeredItemIds.size === content.items.length) onComplete(content.id);
     }, [answeredItemIds.size, content, onComplete]);
 
-    console.log('CONTENT BLOCK', currentPageResponses);
     return (
         <div className="justify-items-center">
             {content.items.map((item) => {

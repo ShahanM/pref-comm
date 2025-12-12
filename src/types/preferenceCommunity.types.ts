@@ -11,7 +11,7 @@ export type Avatar = {
 };
 
 export type AdvisorProfile = {
-    id: number;
+    id: string;
     movies: Movie[];
     recommendation: MovieDetails;
     avatar?: Avatar;
@@ -24,7 +24,7 @@ export interface PreferenceCommResponseObject {
 }
 
 export interface AdviseSelectionObject {
-    advisor_id: number;
+    advisor_id: string;
     status: 'accepted' | 'rejected' | 'unselected';
     suggested_movie: Movie | 'N/A';
     rationale_text: string;
@@ -34,11 +34,14 @@ export interface AdviseResponse {
     id?: string;
     payload_json: AdviseSelectionObject;
     version?: number;
+    study_step_id?: string;
+    study_step_page_id?: string | null;
+    context_tag?: string;
 }
 
 export interface ParticipantResponsePayload {
-    step_id: string;
-    step_page_id: string | null;
+    study_step_id: string;
+    study_step_page_id: string | null;
     context_tag: string;
     payload_json: AdviseSelectionObject;
 }

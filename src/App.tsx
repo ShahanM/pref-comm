@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { ThemeProvider } from 'react-bootstrap';
 import { BrowserRouter as Router } from 'react-router-dom';
-import './styles/App.css';
+import { RouteWrapper } from 'rssa-study-template';
 import { WarningDialog } from './components/warningDialog';
-import RouteWrapper from './pages/RouteWrapper';
-import { customBreakpoints, STRINGS } from './utils/constants';
+import { componentMap } from './pages/componentMap';
+import WelcomePage from './pages/WelcomePage';
+import './styles/App.css';
+import { STRINGS } from './utils/constants';
 
 function App() {
     const [showWarning, setShowWarning] = useState<boolean>(false);
@@ -27,20 +28,20 @@ function App() {
     }, []);
 
     return (
-        <ThemeProvider breakpoints={Object.keys(customBreakpoints)}>
-            <div className="App">
-                {showWarning && (
-                    <WarningDialog
-                        show={showWarning}
-                        onClose={setShowWarning}
-                        title="Warning"
-                        message={STRINGS.WINDOW_TOO_SMALL}
-                        disableHide={true}
-                    />
-                )}
-                <Router basename="/preference-community/">{<RouteWrapper />}</Router>
-            </div>
-        </ThemeProvider>
+        <div className="App">
+            {showWarning && (
+                <WarningDialog
+                    show={showWarning}
+                    onClose={setShowWarning}
+                    title="Warning"
+                    message={STRINGS.WINDOW_TOO_SMALL}
+                    disableHide={true}
+                />
+            )}
+            <Router basename="/preference-community/">
+                <RouteWrapper componentMap={componentMap} WelcomePage={WelcomePage} />
+            </Router>
+        </div>
     );
 }
 

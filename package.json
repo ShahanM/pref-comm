@@ -30,7 +30,8 @@
     "recoil": "^0.7.7",
     "rssa-api": "github:RSSA-Project/react-rssa-api",
     "tailwindcss": "^4.1.11",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "rssa-study-template": "git@github.com:RSSA-Project/rssa-study-template.git"
   },
   "scripts": {
     "dev": "vite",

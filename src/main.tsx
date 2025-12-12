@@ -5,8 +5,6 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
-// import './index.css';
-// import { store } from './store.ts';
 import { ParticipantProvider, StudyProvider } from 'rssa-api';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 import './wdyrs.ts';
