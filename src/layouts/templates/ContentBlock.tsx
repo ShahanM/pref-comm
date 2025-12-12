@@ -15,8 +15,6 @@ const ContentBlock: React.FC<ContentBlockProps> = ({ content, onComplete }) => {
 
     const {
         data: currentPageResponses,
-        isLoading,
-        error,
     } = useQuery({
         queryKey: ['currentPageResponses', content.page_id],
         queryFn: async () => studyApi.get<SurveyItemResponse[]>(`responses/survey/${content.page_id!}`),

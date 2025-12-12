@@ -42,7 +42,7 @@ const AdvisorsNavigation = ({
                 context_tag: 'preference community advisor recommendations',
                 rec_type: recommendationType,
             };
-            const response = await studyApi.post<any, PreferenceCommResponseObject>( // Payload type relaxed for now
+            const response = await studyApi.post<RecommendationRequestPayload, PreferenceCommResponseObject>( // Payload type relaxed for now
                 'recommendations/',
                 contextData
             );
@@ -51,7 +51,7 @@ const AdvisorsNavigation = ({
         enabled: !!studyStep, // Changed enabled condition
     });
 
-    const { data: adviseResponses, isLoading } = useQuery({
+    const { data: adviseResponses } = useQuery({
         queryKey: ['adviseResponses'],
         queryFn: async () => await studyApi.get<AdviseResponse[]>(`responses/interactions/${studyStep.id}`),
         enabled: !!studyApi,

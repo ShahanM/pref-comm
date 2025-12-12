@@ -27,7 +27,6 @@ const MovieSearchInput: React.FC<SearchMovieFormControlProps> = ({ onItemSelecte
     const {
         data: suggestions,
         isFetching: isSuggesting,
-        isError: isSuggestError,
     } = useQuery({
         queryKey: ['movieSuggestions', debouncedQuery],
         queryFn: async () => {

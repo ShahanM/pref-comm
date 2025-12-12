@@ -1,4 +1,4 @@
-import { Participant, StudyStep } from 'rssa-api';
+import type { Participant, StudyStep } from 'rssa-api';
 
 export interface Movie {
   id: string;

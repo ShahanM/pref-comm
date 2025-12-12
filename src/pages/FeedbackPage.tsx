@@ -59,7 +59,7 @@ const FeedbackPage: React.FC = () => {
 		if (feedbackRef.current) {
 			const feedbackText = feedbackRef.current.value;
 			if (feedbackText.length === 0) {
-				setShowConfirmationDialog(true);
+				setShowWarning(true);
 				return;
 			}
 
@@ -69,7 +69,7 @@ const FeedbackPage: React.FC = () => {
 				response_text: feedbackText
 			});
 		}
-	}, [feedbackMutation, studyStep]);
+	}, [feedbackMutation, studyStep, setShowWarning]);
 
 	const handleWarningConfirm = () => {
 		setShowWarning(false);
@@ -77,7 +77,7 @@ const FeedbackPage: React.FC = () => {
 		if (resetNextButton) resetNextButton();
 	}
 
-	const setShowConfirmationDialog = setShowWarning;
+
 
 	const isSubmitting = feedbackMutation.isPending;
 	const isSuccess = feedbackMutation.isSuccess;

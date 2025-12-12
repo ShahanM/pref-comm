@@ -1,4 +1,4 @@
-import { Movie } from '../../widgets/moviegrid/moviegriditem/MovieGridItem.types';
+import type { Movie } from '../../types/rssa.types';
 
 export type AdvisorProfile = {
     id: number;

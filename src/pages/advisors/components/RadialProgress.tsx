@@ -1,5 +1,5 @@
-import { CheckCircleIcon, MinusCircleIcon, PlusCircleIcon } from '@heroicons/react/16/solid';
-import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { CheckCircleIcon } from '@heroicons/react/16/solid';
+import { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 
 // --- Type Definitions ---
 
@@ -107,71 +107,6 @@ const RadialProgress = forwardRef<ProgressRef, RadialProgressProps>(({ TOTAL_STE
 });
 
 // 4. App Component (The Parent)
-const App: React.FC = () => {
-    const TOTAL_STEPS = 10;
-    // Create a ref to attach to the child component
-    const progressRef = useRef<ProgressRef>(null);
-    const [currentStepDisplay, setCurrentStepDisplay] = useState(1);
 
-    // Helper function to update the step display after an action
-    const updateStepDisplay = () => {
-        if (progressRef.current) {
-            setCurrentStepDisplay(progressRef.current.getCurrentStep());
-        }
-    };
-
-    const handleIncrement = () => {
-        progressRef.current?.increment();
-        // Use a timeout to allow the state change in the child to propagate
-        setTimeout(updateStepDisplay, 50);
-    };
-
-    const handleDecrement = () => {
-        progressRef.current?.decrement();
-        // Use a timeout to allow the state change in the child to propagate
-        setTimeout(updateStepDisplay, 50);
-    };
-
-    const isComplete = currentStepDisplay === TOTAL_STEPS;
-    const isStart = currentStepDisplay === 1;
-
-    return (
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-sm bg-white shadow-xl rounded-2xl p-6 transition-all duration-300">
-                <h1 className="text-2xl font-extrabold text-gray-800 mb-2 text-center">External Control Progress</h1>
-                <p className="text-sm text-gray-500 mb-6 text-center">
-                    Current Step: <span className="font-semibold text-indigo-600">{currentStepDisplay}</span> of{' '}
-                    {TOTAL_STEPS}
-                </p>
-
-                {/* The child component (RadialProgress) is mounted here */}
-                <RadialProgress ref={progressRef} TOTAL_STEPS={TOTAL_STEPS} />
-
-                {/* Step Control Buttons (now in the Parent App component) */}
-                <div className="flex justify-center space-x-4 mt-8">
-                    <button
-                        onClick={handleDecrement}
-                        disabled={isStart}
-                        className="flex items-center space-x-2 px-4 py-2 bg-red-500 text-white font-medium rounded-full shadow-lg hover:bg-red-600 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <MinusCircleIcon className="size-20" />
-                        <span>Prev Step</span>
-                    </button>
-
-                    <button
-                        onClick={handleIncrement}
-                        disabled={isComplete}
-                        className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white font-medium rounded-full shadow-lg hover:bg-indigo-700 transition duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <span>Next Step</span>
-                        <PlusCircleIcon className="size-20" />
-                    </button>
-                </div>
-
-                {isComplete && <p className="text-center mt-4 text-green-600 font-bold">Goal Achieved!</p>}
-            </div>
-        </div>
-    );
-};
 
 export default RadialProgress;

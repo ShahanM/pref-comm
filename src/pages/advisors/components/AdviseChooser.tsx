@@ -45,7 +45,7 @@ const AdviseChooser = ({
     const acceptText = status === 'accepted' ? 'Accepted' : 'Accept';
     const rejectText = status === 'rejected' ? 'Rejected' : 'Reject';
 
-    const isButtonDisabled = status !== 'unselected';
+
 
     return (
         <div className="flex w-full h-16 space-x-3 p-1 bg-white rounded-xl transition-all duration-300">
