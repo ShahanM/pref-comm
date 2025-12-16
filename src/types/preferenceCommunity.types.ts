@@ -12,7 +12,7 @@ export type Avatar = {
 
 export type AdvisorProfile = {
     id: string;
-    movies: Movie[];
+    profile_top_n: Movie[];
     recommendation: MovieDetails;
     avatar?: Avatar;
     accepted?: boolean;

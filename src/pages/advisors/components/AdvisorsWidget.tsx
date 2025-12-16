@@ -47,7 +47,7 @@ const AdvisorsWidget: React.FC = () => {
                 <div className="mx-3 mt-3">
                     <h4 className="font-medium">Top movies</h4>
                     <div className="grid grid-cols-7 gap-1 mt-2">
-                        {Array.from(selectedAdvisor.movies).map((movie) => (
+                        {Array.from(selectedAdvisor.profile_top_n).map((movie) => (
                             <div key={movie.id} className="">
                                 <img
                                     className="rounded-md"
