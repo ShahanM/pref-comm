@@ -12,7 +12,7 @@ import type {
     RecommendationType,
 } from '../../../types/preferenceCommunity.types';
 import { type StudyLayoutContextType } from '../../../types/study.types';
-import { useStepCompletion } from 'rssa-study-template';
+import { LoadingText, useStepCompletion } from 'rssa-study-template';
 import { AVATAR_IMGS } from '../advisorsMap';
 
 interface RecommendationRequestPayload {
@@ -80,22 +80,22 @@ const AdvisorsNavigation = ({
             return;
         }
 
-        const advisorIds = Object.keys(advisors);
-        if (advisorIds.length === 0) {
+        const advisorList = Object.values(advisors);
+        if (advisorList.length === 0) {
             setIsStepComplete(false);
             return;
         }
 
-        const allComplete = advisorIds.every((id) => {
-            const count = responseMap.get(id) || 0;
+        const allComplete = advisorList.every((advisor) => {
+            const count = responseMap.get(advisor.id) || 0;
             return count >= 3;
         });
 
         setIsStepComplete(allComplete);
     }, [advisors, responseMap, setIsStepComplete]);
 
-    if (recommendationsLoading) return <>Loading ...</>;
-    if (!advisors) return <>Loading advisors</>;
+    if (recommendationsLoading) return <LoadingText text="Loading ..." />;
+    if (!advisors) return <LoadingText text="Loading advisors..." />;
 
     return (
         <div className="py-3 mt-1 me-1 border border-gray-300 rounded-md text-left w-full">
