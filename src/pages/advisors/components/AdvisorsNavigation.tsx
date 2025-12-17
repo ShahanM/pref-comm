@@ -94,11 +94,22 @@ const AdvisorsNavigation = ({
         setIsStepComplete(allComplete);
     }, [advisors, responseMap, setIsStepComplete]);
 
+    const { selectedAdvisor, setSelectedAdvisor } = useAdvisorSelection();
+
+    useEffect(() => {
+        if (advisors && !selectedAdvisor) {
+            const advisorList = Object.values(advisors);
+            if (advisorList.length > 0) {
+                setSelectedAdvisor(advisorList[0]);
+            }
+        }
+    }, [advisors, selectedAdvisor, setSelectedAdvisor]);
+
     if (recommendationsLoading) return <LoadingText text="Loading ..." />;
     if (!advisors) return <LoadingText text="Loading advisors..." />;
 
     return (
-        <div className="py-3 mt-1 me-1 border border-gray-300 rounded-md text-left w-full">
+        <div className="py-3 mt-1 me-1 border border-gray-300 rounded-md text-left w-1/4 min-w-[250px] overflow-y-auto" style={{ maxHeight: '80vh' }}>
             <h2 className="mt-5 ms-3">Your Advisors</h2>
             <div className="">
                 {Object.values(advisors).map((advisor) => {

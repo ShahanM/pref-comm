@@ -32,13 +32,19 @@ const AdvisorsWidget: React.FC = () => {
         return response;
     }, [selectedAdvisor, adviseResponses]);
 
-    if (!selectedAdvisor) return <>No Advisors selected</>;
-    if (isLoading) return <>Loading data...</>;
+    const loadingContainer = (content: React.ReactNode) => (
+        <div className="flex flex-1 items-center justify-center border border-gray-300 rounded-md mt-1 ms-1 bg-gray-50 text-gray-500">
+            {content}
+        </div>
+    );
+
+    if (!selectedAdvisor) return loadingContainer(<>No Advisors selected</>);
+    if (isLoading) return loadingContainer(<>Loading data...</>);
 
     const recommendation = selectedAdvisor.recommendation;
 
     return (
-        <div className="flex">
+        <div className="flex flex-1 w-full">
             <div className="py-3 mt-1 border border-gray-300 rounded-md text-left">
                 <div className="flex justify-between m-3 shadow-sm py-3 rounded-md">
                     <h4 className="mx-3 font-medium">{`${selectedAdvisor?.avatar?.name}'s profile`}</h4>
