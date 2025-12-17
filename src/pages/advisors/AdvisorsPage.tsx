@@ -2,7 +2,6 @@ import React from 'react';
 import { AdvisorSelectionProvider } from '../../contexts/advisorSelectionContext';
 import AdvisorsNavigation from './components/AdvisorsNavigation';
 import AdvisorsWidget from './components/AdvisorsWidget';
-import './components/css/AdvisorsComponent.css';
 
 const AdvisorsPageContent: React.FC = () => {
     return (
