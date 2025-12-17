@@ -167,7 +167,7 @@ interface RadialProgressProps {
 }
 
 const RadialProgress: React.FC<RadialProgressProps> = ({ totalSteps, currentStep = 0 }) => {
-    const effectiveStep = Math.max(1, currentStep);
+    const effectiveStep = Math.max(0, currentStep);
 
     const isComplete = effectiveStep >= totalSteps;
 
