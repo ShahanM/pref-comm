@@ -1,7 +1,6 @@
 import DOMPurify from 'dompurify';
 import parse from 'html-react-parser';
-import Button from 'react-bootstrap/Button';
-import Modal from 'react-bootstrap/Modal';
+import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 
 interface WarningDialogProps {
     show: boolean;
@@ -32,25 +31,42 @@ export const WarningDialog: React.FC<WarningDialogProps> = ({
     };
 
     return (
-        <>
-            <Modal show={show} onHide={handleClose}>
-                <Modal.Header className="warning-header-ers" closeButton={false}>
-                    <Modal.Title>{title}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>{htmlparser(message)}</Modal.Body>
-                {!disableHide && (
-                    <Modal.Footer>
-                        {cancelCallback && (
-                            <Button variant="ersCancel" onClick={cancelCallback}>
-                                Close
-                            </Button>
-                        )}
-                        <Button variant="ers" onClick={confirmCallback ? confirmCallback : handleClose}>
-                            {confirmText}
-                        </Button>
-                    </Modal.Footer>
-                )}
-            </Modal>
-        </>
+        <Dialog open={show} onClose={handleClose} className="relative z-50">
+            {/* The backdrop, rendered as a fixed sibling to the panel container */}
+            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+
+            {/* Full-screen container to center the panel */}
+            <div className="fixed inset-0 flex w-screen items-center justify-center p-4">
+                {/* The actual dialog panel  */}
+                <DialogPanel className="mx-auto w-full max-w-lg rounded-lg bg-white shadow-xl overflow-hidden">
+                    <div className="bg-[#f9b05c] px-4 py-3">
+                        <DialogTitle className="text-lg font-medium">{title}</DialogTitle>
+                    </div>
+
+                    <div className="px-4 py-4">
+                        {htmlparser(message)}
+                    </div>
+
+                    {!disableHide && (
+                        <div className="flex justify-end gap-2 px-4 py-3 bg-gray-50">
+                            {cancelCallback && (
+                                <button
+                                    className="px-4 py-2 rounded bg-[#c9ccd5] hover:bg-[#8b8b8b] text-[#4a4b4b] border border-[#c9ccd5] hover:border-[#8b8b8b]"
+                                    onClick={cancelCallback}
+                                >
+                                    Close
+                                </button>
+                            )}
+                            <button
+                                className="px-4 py-2 rounded bg-[#f9b05c] hover:bg-[#d9903c] text-[#4a4b4b]"
+                                onClick={confirmCallback ? confirmCallback : handleClose}
+                            >
+                                {confirmText}
+                            </button>
+                        </div>
+                    )}
+                </DialogPanel>
+            </div>
+        </Dialog>
     );
 };

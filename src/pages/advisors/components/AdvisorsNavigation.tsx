@@ -70,8 +70,7 @@ const AdvisorsNavigation = ({
         return newMap;
     }, [adviseResponses]);
 
-    console.log(adviseResponses);
-    console.log(responseMap);
+
 
     const { setIsStepComplete } = useStepCompletion();
 
@@ -103,7 +102,7 @@ const AdvisorsNavigation = ({
             <h2 className="mt-5 ms-3">Your Advisors</h2>
             <div className="">
                 {Object.values(advisors).map((advisor) => {
-                    console.log(advisor.id, responseMap?.get(advisor.id));
+
                     return (
                         <AdvisorListItem
                             key={advisor.id}
@@ -120,7 +119,6 @@ const AdvisorsNavigation = ({
 const AdvisorListItem = ({ advisor, taskCount }: { advisor: AdvisorProfile; taskCount: number }) => {
     const { selectedAdvisor, setSelectedAdvisor } = useAdvisorSelection();
     const nameSplit = advisor.avatar?.name.split(' ');
-    console.log(advisor.avatar?.name, taskCount);
     const avatarImg = useMemo(() => {
         if (!advisor || !advisor.avatar) return;
         return AVATAR_IMGS[advisor.avatar?.src];

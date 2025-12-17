@@ -1,15 +1,13 @@
-import { Container, Row } from 'react-bootstrap';
-
 const FinalPage: React.FC = () => {
 
     return (
-        <Container>
-            <Row style={{ textAlign: 'left' }}>
+        <div className="container mx-auto px-4">
+            <div className="text-left">
                 <p>
                     You should be automatically redirected back to the Prolific page. If not, please click the link
                     below.
                 </p>
-                <a href="#" style={{ textAlign: 'center' }}>
+                <a href="#" className="block text-center">
                     Some redirect url.
                 </a>
                 <p>
@@ -20,8 +18,8 @@ const FinalPage: React.FC = () => {
                     Note: If you do not click the Done button, you will not be able to run the study again on this
                     browser without clearing browser data/cache.
                 </p>
-            </Row>
-        </Container>
+            </div>
+        </div>
     );
 };
 

@@ -7,7 +7,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
 import { ParticipantProvider, StudyProvider } from 'rssa-api';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
-import './wdyrs.ts';
+
 
 const RSSA_API_DEV = import.meta.env.VITE_RSSA_API_DEV!;
 const RSSA_API = import.meta.env.VITE_RSSA_API!;

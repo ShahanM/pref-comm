@@ -14,12 +14,10 @@ const AdviseChooser = ({
     const handleSelect = (newStatus: Status) => {
         if (newStatus === status) return;
         onSelect(newStatus);
-        console.log(`Setting status to: ${newStatus}`);
     };
 
     const handleReset = () => {
         onSelect('unselected');
-        console.log('Resetting selection to unselected.');
     };
 
     const baseButtonClasses = clsx(

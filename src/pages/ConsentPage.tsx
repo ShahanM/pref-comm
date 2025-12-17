@@ -35,12 +35,12 @@ const ConsentContent: React.FC = () => {
             <h4 className="mt-3">Time and Compensation</h4>
             <p>
                 It will take about 15 to 20 minutes to complete the study, and you will receive&nbsp;
-                <span className="textemph">$2.75</span>&nbsp; upon completion. Participation is voluntary. Please
+                <span className="font-bold underline">$2.75</span>&nbsp; upon completion. Participation is voluntary. Please
                 feel free to reach out to Sushmita Khan (sushmik@clemson.edu) if you have any questions. Thank you
                 for your time!
             </p>
             {/** TODO: Incorporate the following instead of the content above */}
-            <p className="informedConsent-title">Key Information About the Research Study</p>
+            <p className="mb-2 font-bold uppercase">Key Information About the Research Study</p>
             <p>
                 Dr. Bart Knijnenburg is inviting you to volunteer for a research study. Bart Knijnenburg is an
                 assistant professor at Clemson University conducting the study with one of his graduate students,
@@ -48,59 +48,59 @@ const ConsentContent: React.FC = () => {
             </p>
 
             <p>
-                <span className="informedConsent-bold">Study Purpose:&nbsp;</span>
+                <span className="mb-0 font-medium">Study Purpose:&nbsp;</span>
                 The purpose of this research is to investigate how a peer-based recommendation system works and the
                 behaviors that it elicits in members of the community.
             </p>
 
             <p>
-                <span className="informedConsent-bold">Voluntary Consent:&nbsp;</span>
+                <span className="mb-0 font-medium">Voluntary Consent:&nbsp;</span>
                 Participation is voluntary, and you have the option to not participate. You will not be punished in
                 any way if you decide not to be in the study or to stop taking part in the study.
             </p>
 
             <p>
-                <span className="informedConsent-bold">Activities and Procedures:&nbsp;</span>
+                <span className="mb-0 font-medium">Activities and Procedures:&nbsp;</span>
                 You will be provided a consent form that you will have to sign to agree to the terms and conditions.
                 Once you sign the consent form, you will be asked to complete the pre-survey, read through The Peer
                 Recommendation Platform introduction page.
             </p>
 
             <p>
-                <span className="informedConsent-bold">Participation Time:&nbsp;</span>
+                <span className="mb-0 font-medium">Participation Time:&nbsp;</span>
                 It will take you about 65 minutes to be part of this study.
             </p>
 
             <p>
-                <span className="informedConsent-bold">Risks and Discomforts:&nbsp;</span>
+                <span className="mb-0 font-medium">Risks and Discomforts:&nbsp;</span>
                 We do not know of any risks or discomforts to you in this research study. You may opt out of the
                 study at any time if you are not comfortable.
             </p>
             <p>
-                <span className="informedConsent-bold">Possible Benefits:&nbsp;</span>
+                <span className="mb-0 font-medium">Possible Benefits:&nbsp;</span>
                 You may not benefit directly for taking part in this study; however, we believe that this system
                 will help you help.
             </p>
 
-            <p className="informedConsent-title">Incentives</p>
+            <p className="mb-2 font-bold uppercase">Incentives</p>
             <p>
                 For participating in this user study, you will be compensated with TBD upon successful completion of
                 the study.
             </p>
 
-            <p className="informedConsent-title">Audio/Video Recording and Photographs</p>
+            <p className="mb-2 font-bold uppercase">Audio/Video Recording and Photographs</p>
             <p>
                 Our study does not ask you to provide personal or identifiable information. No audio or video will
                 be recorded while participants will take the study.
             </p>
 
-            <p className="informedConsent-title">Equipment and Devices that will be used in Research Study</p>
+            <p className="mb-2 font-bold uppercase">Equipment and Devices that will be used in Research Study</p>
             <p>
                 Are required: a computer, Internet browser and internet connection to access the survey and take the
                 experiment.
             </p>
 
-            <p className="informedConsent-title">Protection of Privacy and Confidentiality</p>
+            <p className="mb-2 font-bold uppercase">Protection of Privacy and Confidentiality</p>
             <p>
                 The results of this study may be published in scientific journals, professional publications, or
                 educational presentations. Identifiable information collected during the study will be removed and
@@ -111,7 +111,7 @@ const ConsentContent: React.FC = () => {
                 in the study.
             </p>
 
-            <p className="informedConsent-title">Contact Information</p>
+            <p className="mb-2 font-bold uppercase">Contact Information</p>
             <p>
                 If you have any questions or concerns about your rights in this research study, please contact the
                 Clemson University Office of Research Compliance (ORC) at 864-656- 0636 or{' '}

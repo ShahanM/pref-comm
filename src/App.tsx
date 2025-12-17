@@ -28,7 +28,7 @@ function App() {
     }, []);
 
     return (
-        <div className="App">
+        <div className="text-center text-base font-light">
             {showWarning && (
                 <WarningDialog
                     show={showWarning}

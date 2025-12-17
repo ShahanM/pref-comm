@@ -75,7 +75,8 @@ const UserResponsePanel = ({
                     payload_json: { ...newResponse },
                     version: fullRecord.version || 1,
                 };
-                console.log('PATCHPAYLOAD', patchPayload);
+                // console.log('PATCHPAYLOAD', patchPayload);
+
                 await studyApi.patch<AdviseResponse, void>(`responses/interactions/${recordId}`, patchPayload);
                 return {
                     type: 'PATCH',
@@ -158,7 +159,7 @@ const UserResponsePanel = ({
             setIsRationaleSaved(true);
         },
         onError: () => {
-            console.error('Failed to save response on the server.');
+
             setLocalResponseDraft(prevResponse);
         },
     });
@@ -260,7 +261,7 @@ const UserResponsePanel = ({
 };
 
 const SelectedMovieBlock = ({ movie, onRemove }: { movie: Movie | 'N/A'; onRemove: () => void }) => {
-    console.log('SELECTEDMOVIE', movie);
+
     if (!movie || movie === 'N/A') return <></>;
     return (
         <div className="relative flex my-3 p-3 bg-gray-300 rounded-lg shadow-inner">
