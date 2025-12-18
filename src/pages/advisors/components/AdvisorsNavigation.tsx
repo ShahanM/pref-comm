@@ -17,9 +17,6 @@ import { AVATAR_IMGS } from '../advisorsMap';
 
 interface RecommendationRequestPayload {
     step_id: string;
-    // step_page_id?: string;
-    // context_tag?: string;
-    // rec_type?: 'baseline' | 'reference' | 'diverse'; // Could include if needed by new endpoint via run_config
 }
 
 const AdvisorsNavigation = ({
@@ -70,8 +67,6 @@ const AdvisorsNavigation = ({
         return newMap;
     }, [adviseResponses]);
 
-
-
     const { setIsStepComplete } = useStepCompletion();
 
     useEffect(() => {
@@ -109,11 +104,13 @@ const AdvisorsNavigation = ({
     if (!advisors) return <LoadingText text="Loading advisors..." />;
 
     return (
-        <div className="py-3 mt-1 me-1 border border-gray-300 rounded-md text-left w-1/4 min-w-[250px] overflow-y-auto" style={{ maxHeight: '80vh' }}>
+        <div
+            className="py-3 mt-1 me-1 border border-gray-300 rounded-md text-left w-1/4 min-w-[250px] overflow-y-auto"
+            style={{ maxHeight: '80vh' }}
+        >
             <h2 className="mt-5 ms-3">Your Advisors</h2>
             <div className="">
                 {Object.values(advisors).map((advisor) => {
-
                     return (
                         <AdvisorListItem
                             key={advisor.id}
