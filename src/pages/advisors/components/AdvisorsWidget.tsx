@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import React, { useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useStudy } from 'rssa-api';
+import { useStudy } from '@rssa-project/api';
 import { useAdvisorSelection } from '../../../hooks/useAdvisorSelection';
 import type { AdviseResponse } from '../../../types/preferenceCommunity.types';
 import type { StudyLayoutContextType } from '../../../types/study.types';
@@ -42,7 +42,7 @@ const AdvisorsWidget: React.FC = () => {
     if (isLoading) return loadingContainer(<>Loading data...</>);
 
     const recommendation = selectedAdvisor.recommendation;
-
+    console.log('Advisor', selectedAdvisor, typeof selectedAdvisor);
     return (
         <div className="flex flex-1 w-full">
             <div className="py-3 mt-1 border border-gray-300 rounded-md text-left">
@@ -53,8 +53,8 @@ const AdvisorsWidget: React.FC = () => {
                 <div className="mx-3 mt-3">
                     <h4 className="font-medium">Top movies</h4>
                     <div className="grid grid-cols-7 gap-1 mt-2">
-                        {Array.from(selectedAdvisor.profile_top_n).map((movie) => (
-                            <div key={movie.id} className="">
+                        {Array.from(selectedAdvisor.profile_top_n).map((movie, index) => (
+                            <div key={index} className="">
                                 <img
                                     className="rounded-md"
                                     src={movie.tmdb_poster}

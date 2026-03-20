@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useStudy } from 'rssa-api';
+import { useStudy } from '@rssa-project/api';
 import type {
     AdviseResponse,
     AdviseSelectionObject,
@@ -75,7 +75,6 @@ const UserResponsePanel = ({
                     payload_json: { ...newResponse },
                     version: fullRecord.version || 1,
                 };
-                // console.log('PATCHPAYLOAD', patchPayload);
 
                 await studyApi.patch<AdviseResponse, void>(`responses/interactions/${recordId}`, patchPayload);
                 return {

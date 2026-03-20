@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useState } from 'react';
-import { useStudy } from 'rssa-api';
+import { useStudy } from '@rssa-project/api';
 import type { PageContent, SurveyItemResponse } from '../../types/rssa.types';
 import ItemBlock from './ItemBlock';
 

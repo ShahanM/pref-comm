@@ -23,6 +23,11 @@ export interface PreferenceCommResponseObject {
     [key: string]: AdvisorProfile;
 }
 
+export interface PreferenceCommResponseWrapper {
+    rec_type: string;
+    items: PreferenceCommResponseObject;
+}
+
 export interface AdviseSelectionObject {
     advisor_id: string;
     status: 'accepted' | 'rejected' | 'unselected';

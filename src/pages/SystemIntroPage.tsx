@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useStepCompletion } from 'rssa-study-template';
+import { useStepCompletion } from '@rssa-project/study-template';
 
 const SystemIntroPage: React.FC = () => {
     const { setIsStepComplete } = useStepCompletion();

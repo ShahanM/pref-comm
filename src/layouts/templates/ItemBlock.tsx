@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify';
 import parse from 'html-react-parser';
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useStudy } from 'rssa-api';
+import { useStudy } from '@rssa-project/api';
 import { useDebounce } from '../../hooks/useDebounce';
 import type { ScaleLevel, SurveyConstructItem, SurveyItemResponse } from '../../types/rssa.types';
 import type { StudyLayoutContextType } from '../../types/study.types';

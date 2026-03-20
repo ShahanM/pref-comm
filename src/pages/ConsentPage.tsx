@@ -1,4 +1,4 @@
-import { ConsentPage as GenericConsentPage } from 'rssa-study-template';
+import { ConsentPage as GenericConsentPage } from '@rssa-project/study-template';
 
 const ConsentContent: React.FC = () => {
     return (
@@ -92,17 +92,8 @@ const ConsentContent: React.FC = () => {
 };
 
 const ConsentPage: React.FC = () => {
-    // FIXME: These should be environment variables or constants
-    const PARTICIPANT_TYPE_ID = '149078d0-cece-4b2c-81cd-a7df4f76d15a';
-    const PARTICIPANT_EXTERNAL_ID = 'N/A';
-
     return (
-        <GenericConsentPage
-            participantTypeId={PARTICIPANT_TYPE_ID}
-            externalId={PARTICIPANT_EXTERNAL_ID}
-            title=""
-            itemTitle=""
-        >
+        <GenericConsentPage itemTitle="" title="">
             <ConsentContent />
         </GenericConsentPage>
     );

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import parse from 'html-react-parser';
 import React, { useMemo, useState } from 'react';
-import { useStudy } from 'rssa-api';
+import { useStudy } from '@rssa-project/api';
 import { useDebounce } from '../../../hooks/useDebounce';
 import type { Movie } from '../../../types/rssa.types';
 

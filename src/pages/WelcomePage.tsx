@@ -1,4 +1,4 @@
-import { WelcomePage as GenericWelcomePage } from 'rssa-study-template';
+import { WelcomePage as GenericWelcomePage } from '@rssa-project/study-template';
 
 const WelcomeContent: React.FC = () => {
     return (

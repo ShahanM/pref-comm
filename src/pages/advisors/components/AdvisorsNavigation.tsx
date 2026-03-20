@@ -3,16 +3,16 @@ import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useMemo, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useStudy } from 'rssa-api';
+import { useStudy } from '@rssa-project/api';
 import { useAdvisorSelection } from '../../../hooks/useAdvisorSelection';
 import type {
     AdviseResponse,
     AdvisorProfile,
-    PreferenceCommResponseObject,
+    PreferenceCommResponseWrapper,
     RecommendationType,
 } from '../../../types/preferenceCommunity.types';
 import { type StudyLayoutContextType } from '../../../types/study.types';
-import { LoadingText, useStepCompletion } from 'rssa-study-template';
+import { LoadingText, useStepCompletion } from '@rssa-project/study-template';
 import { AVATAR_IMGS } from '../advisorsMap';
 
 interface RecommendationRequestPayload {
@@ -20,11 +20,9 @@ interface RecommendationRequestPayload {
 }
 
 const AdvisorsNavigation = ({
-    // ratedItems, // Removed
     condition,
     recommendationType = 'baseline',
 }: {
-    // ratedItems: RatedItem[];
     condition?: number;
     recommendationType?: RecommendationType;
 }) => {
@@ -32,20 +30,20 @@ const AdvisorsNavigation = ({
     const { studyApi } = useStudy();
 
     const { data: advisors, isLoading: recommendationsLoading } = useQuery({
-        queryKey: ['recommendations', condition], // Removed ratedItems from key
+        queryKey: ['recommendations', condition],
         queryFn: async () => {
             const contextData = {
                 step_id: studyStep.id,
                 context_tag: 'preference community advisor recommendations',
                 rec_type: recommendationType,
             };
-            const response = await studyApi.post<RecommendationRequestPayload, PreferenceCommResponseObject>( // Payload type relaxed for now
+            const response = await studyApi.post<RecommendationRequestPayload, PreferenceCommResponseWrapper>(
                 'recommendations/',
                 contextData
             );
-            return response;
+            return response.items;
         },
-        enabled: !!studyStep, // Changed enabled condition
+        enabled: !!studyStep,
     });
 
     const { data: adviseResponses } = useQuery({
@@ -57,7 +55,7 @@ const AdvisorsNavigation = ({
     const responseMap = useMemo(() => {
         if (!adviseResponses) return;
         const newMap = new Map<string, number>();
-        adviseResponses.forEach((advRes) => {
+        adviseResponses.forEach((advRes: AdviseResponse) => {
             let count = 0;
             if (advRes.payload_json.status === 'accepted' || advRes.payload_json.status === 'rejected') count += 1;
             if (advRes.payload_json.suggested_movie !== 'N/A') count += 1;
@@ -152,7 +150,6 @@ const AdvisorListItem = ({ advisor, taskCount }: { advisor: AdvisorProfile; task
                 </span>
             )}
             <div className="">
-                {/* <CheckIcon className="size-5 ms-3 text-green-600" /> */}
                 <RadialProgress totalSteps={3} currentStep={taskCount} />
             </div>
         </div>
@@ -162,10 +159,9 @@ const classNames = (...classes: (string | boolean | undefined | null)[]) => {
     return classes.filter(Boolean).join(' ');
 };
 
-// --- Constants (Unchanged as requested by user) ---
 const RADIUS = 10;
 const STROKE_WIDTH = 9;
-const VIEWBOX_SIZE = 30; // The SVG coordinate space
+const VIEWBOX_SIZE = 30;
 const CENTER_COORDINATE = VIEWBOX_SIZE / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 

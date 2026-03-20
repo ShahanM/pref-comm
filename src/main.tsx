@@ -5,8 +5,8 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.tsx';
-import { ParticipantProvider, StudyProvider } from 'rssa-api';
-import ErrorBoundary from './components/ErrorBoundary.tsx';
+import { ParticipantProvider, StudyProvider } from '@rssa-project/api';
+import { ErrorBoundary } from '@rssa-project/study-template';
 
 
 const RSSA_API_DEV = import.meta.env.VITE_RSSA_API_DEV!;
@@ -32,7 +32,7 @@ if (import.meta.hot) {
     });
 }
 
-const api_url_base = process.env.NODE_ENV === 'development' ? RSSA_API_DEV : RSSA_API;
+const api_url_base = import.meta.env.DEV ? RSSA_API_DEV : RSSA_API;
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
@@ -43,6 +43,7 @@ const queryClient = new QueryClient({
 });
 
 const localStoragePersister = createAsyncStoragePersister({
+    key: `${RSSA_STUDY_ID}_REACT_QUERY_OFFLINE_CACHE`,
     storage: {
         getItem: (key) => Promise.resolve(localStorage.getItem(key)),
         setItem: (key, value) => Promise.resolve(localStorage.setItem(key, value)),
@@ -59,14 +60,12 @@ const providerConfig = {
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
         <PersistQueryClientProvider client={queryClient} persistOptions={{ persister: localStoragePersister }}>
-            <ParticipantProvider>
+            <ParticipantProvider storageKeyPrefix={RSSA_STUDY_ID}>
                 <StudyProvider config={providerConfig}>
-                    {/* <Provider store={store}> */}
                     <ErrorBoundary>
                         <App />
                     </ErrorBoundary>
                     <ReactQueryDevtools initialIsOpen={false} />
-                    {/* </Provider> */}
                 </StudyProvider>
             </ParticipantProvider>
         </PersistQueryClientProvider>

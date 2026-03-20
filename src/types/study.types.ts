@@ -1,1 +1,1 @@
-export type { StudyLayoutContextType } from 'rssa-study-template';
+export type { StudyLayoutContextType } from '@rssa-project/study-template';

@@ -1,8 +1,8 @@
-import { DemographicsPage, FinalPage, MovieRatingPage, SurveyPage } from 'rssa-study-template';
+import { DemographicsPage, FinalPage, MovieRatingPage, SurveyPage, FeedbackPage } from '@rssa-project/study-template';
 import AdvisorsPage from './advisors/AdvisorsPage';
 import InformedConsent from './ConsentPage';
-import FeedbackPage from './FeedbackPage';
 import SystemIntroPage from './SystemIntroPage';
+import Debrief from './Debrief';
 
 export const componentMap: {
     [key: string]: React.FC;
@@ -12,7 +12,7 @@ export const componentMap: {
     SurveyStep: SurveyPage,
     PreferenceElicitationStep: MovieRatingPage,
     TaskStep: AdvisorsPage,
-    ExtraStep: FeedbackPage,
+    ExtraStep: Debrief,
     DemographicsStep: DemographicsPage,
     CompletionStep: FinalPage,
 };
