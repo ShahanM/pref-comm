@@ -1,0 +1,432 @@
+.advisors-widget-row {
+	display: flex;
+	height: 100%;
+	overflow: hidden;
+}
+
+.advisors-widget-column {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow-y: auto;
+}
+
+.advisors-widget-column>* {
+	flex: 1 1 auto;
+	overflow-y: auto;
+}
+
+/* Ensure AdvisorsPanel takes full height */
+.advisors-panel-container {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.advisors-list {
+	flex: 1;
+	overflow-y: auto;
+}
+
+/* Adjust AdvisorDetails, AdvisorRecommendations, and RecommendationForm if needed */
+.advisor-details,
+.advisor-recommendations,
+.recommendation-form {
+	height: 100%;
+	overflow-y: auto;
+}
+
+.advisor-details-container {
+	border: 2px solid #ccc;
+	border-radius: 8px;
+	overflow: hidden;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.advisor-details-header {
+	background-color: #e9ecef;
+	padding: 10px 15px;
+	border-bottom: 1px solid #ccc;
+}
+
+.advisor-details-header h4 {
+	margin: 0;
+	font-size: 1.1rem;
+	color: #333;
+}
+
+.advisor-details-content {
+	flex-grow: 1;
+	overflow-y: auto;
+	padding: 15px;
+}
+
+.box {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	padding: 15px;
+	margin-bottom: 20px;
+	background-color: #fff;
+}
+
+.section-title {
+	background-color: #f8f9fa;
+	padding: 5px 10px;
+	margin: -15px -15px 15px -15px;
+	border-bottom: 1px solid #ddd;
+	font-size: 1rem;
+	font-weight: bold;
+}
+
+.advisor-profile {
+	margin-bottom: 20px;
+}
+
+.profile-heading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin-bottom: 15px;
+}
+
+.advisor-image {
+	width: 60px;
+	height: 60px;
+	margin-bottom: 10px;
+}
+
+.advisor-image-about {
+	width: 90px;
+	margin-bottom: 10px;
+}
+
+.profile-heading h5 {
+	margin: 0;
+	font-size: 1.1rem;
+}
+
+.profile-list {
+	list-style-type: none;
+	padding-left: 0;
+	display: flex;
+}
+
+.profile-item {
+	font-size: 0.9rem;
+	margin-bottom: 10px;
+	margin-left: 3px;
+}
+
+.profile-item:first-child {
+	margin-left: 0;
+}
+
+.profile-item strong {
+	min-width: 200px;
+	margin-right: 10px;
+}
+
+.recommendation-content {
+	display: flex;
+	align-items: flex-start;
+}
+
+.recommendation-poster {
+	width: 180px;
+	margin-right: 15px;
+	border-color: rgb(204, 204, 204, 0.5);
+	border-style: solid;
+}
+
+.recommendation-description {
+	text-align: left;
+}
+
+.advisors-panel-container {
+	border: 2px solid #ccc;
+	border-radius: 8px;
+	overflow: hidden;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.advisors-panel-container h2 {
+	background-color: #f0f0f0;
+	margin: 0;
+	padding: 10px;
+	font-size: 1.2em;
+	text-align: center;
+}
+
+.advisors-list {
+	overflow-y: auto;
+	flex-grow: 1;
+}
+
+.advisor-item {
+	display: flex;
+	align-items: center;
+	padding: 10px 5px;
+	cursor: pointer;
+	transition: background-color 0.3s ease;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.advisor-item:last-child {
+	border-bottom: none;
+}
+
+.advisor-item:hover {
+	background-color: #f5f5f5;
+}
+
+.advisor-item.selected {
+	background-color: #e6f7ff;
+}
+
+.advisor-image {
+	width: 40px;
+	height: 40px;
+	object-fit: cover;
+	margin-right: 10px;
+}
+
+.advisor-info {
+	display: flex;
+	flex-direction: column;
+	text-align: left;
+}
+
+.advisor-anonymous,
+.advisor-name {
+	color: #333;
+	word-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+	.advisor-item {
+		padding: 8px 5px;
+	}
+
+	.advisor-image {
+		width: 30px;
+		height: 30px;
+		margin-right: 8px;
+
+	}
+}
+
+.AdvisorPanel-list-item {
+	text-align: left;
+	display: flex;
+	border: 1px solid;
+	margin: 2px;
+	cursor: pointer;
+}
+
+.AdvisorPanel-list-item:hover {
+	background-color: #282c34;
+	color: white;
+}
+
+.selected {
+	background-color: #282c34;
+	color: white;
+}
+
+.AdvisorPanel-list-item-image {
+	height: 50px;
+	width: 32px;
+	margin-left: 5px;
+	margin-right: 1px;
+}
+
+.AdvisorPanel-list-item-desc {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.AdvisorsDetails-poster {
+	height: 150px;
+	width: 150px;
+	margin-left: 7px;
+}
+
+.AdvisorDetails-desc {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.AdvisorProfile-list-item {
+	text-align: left;
+	display: grid;
+	grid-template-columns: auto 1fr;
+	grid-gap: 10px;
+	border: 1px solid;
+	margin: 3px;
+}
+
+.profImg {
+	float: left;
+	width: 60px;
+	height: 60px;
+	background: #555;
+	margin-top: 2px;
+	margin-bottom: 2px;
+}
+
+.profHead {
+	float: left;
+	margin-left: 10px;
+}
+
+.profile-heading {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: calc(10px + 2vh);
+	/* Adjust the base font size and scaling factor as needed */
+}
+
+/* AdvisorRecommendations styles */
+.advisor-recommendations-container {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	border: 2px solid #ccc;
+	border-radius: 8px;
+	overflow: hidden;
+}
+
+.advisor-recommendations-header {
+	background-color: #e9ecef;
+	padding: 10px 15px;
+	text-align: left;
+	border-bottom: 1px solid #ccc;
+}
+
+.advisor-recommendations-header h4 {
+	font-size: 1.1rem;
+	margin: 0;
+	color: #333;
+}
+
+.centered-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+	padding: 20px;
+}
+
+.question-container {
+	margin-bottom: 60px;
+	/* Increased spacing */
+	width: 100%;
+}
+
+.question-container p {
+	font-size: 1rem;
+	text-align: center;
+	margin: 0;
+}
+
+.buttons-container {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	width: 100%;
+}
+
+.recommendation-button {
+	width: 100%;
+	padding: 15px 10px;
+	font-size: 1em;
+	font-weight: bold;
+	border-radius: 5px;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	background-color: transparent;
+	white-space: normal;
+	word-wrap: break-word;
+	height: auto;
+	min-height: 60px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+}
+
+.accept-button {
+	border: 2px solid #28a745;
+	color: #28a745;
+}
+
+.accept-button:hover,
+.accept-button.selected {
+	background-color: #28a745;
+	color: white;
+}
+
+.reject-button {
+	border: 2px solid #dc3545;
+	color: #dc3545;
+}
+
+.reject-button:hover,
+.reject-button.selected {
+	background-color: #dc3545;
+	color: white;
+}
+
+.recommendation-form-content {
+	padding: 20px;
+	text-align: left;
+}
+
+.success-message {
+	margin-top: 20px;
+	text-align: center;
+}
+
+.submit-btn {
+	width: 100%;
+	margin-top: 10px;
+}
+
+
+.movie-search-suggestions p {
+	margin-left: 9px
+}
+
+.movie-search-suggestions:hover {
+	background-color: #f5f5f5;
+	cursor: pointer;
+}
+
+.selected-movie-block {
+	display: flex;
+	background-color: #d5d5d5;
+	padding: 0.5em;
+	border-radius: 5px;
+}
+
+.selected-movie-block .movie-details {
+	margin: 0.5em;
+}
+
+
+.advisor-responded-pos {
+	color: green;
+	margin-left: 18px;
+}
+
+.advisor-responded-neg {
+	color: red;
+	margin-left: 18px;
+}

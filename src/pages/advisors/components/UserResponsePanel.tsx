@@ -158,7 +158,6 @@ const UserResponsePanel = ({
             setIsRationaleSaved(true);
         },
         onError: () => {
-
             setLocalResponseDraft(prevResponse);
         },
     });
@@ -260,7 +259,6 @@ const UserResponsePanel = ({
 };
 
 const SelectedMovieBlock = ({ movie, onRemove }: { movie: Movie | 'N/A'; onRemove: () => void }) => {
-
     if (!movie || movie === 'N/A') return <></>;
     return (
         <div className="relative flex my-3 p-3 bg-gray-300 rounded-lg shadow-inner">
