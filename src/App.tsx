@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
+
 import { BrowserRouter as Router } from 'react-router-dom';
-import { RouteWrapper, WarningDialog } from '@rssa-project/study-template';
+import { RouteWrapper, WarningDialog, SessionExpiredModal } from '@rssa-project/study-template';
 import { componentMap } from './pages/componentMap';
 import WelcomePage from './pages/WelcomePage';
-import './styles/App.css';
 import { STRINGS } from './utils/constants';
+import './styles/App.css';
 
 function App() {
     const [showWarning, setShowWarning] = useState<boolean>(false);
@@ -37,12 +38,12 @@ function App() {
                     disableHide={true}
                 />
             )}
-            <Router basename="/preference-community/">
+            <SessionExpiredModal />
+            <Router>
                 <RouteWrapper componentMap={componentMap} WelcomePage={WelcomePage} />
             </Router>
         </div>
     );
 }
 
-App.whyDidYouRender = true;
 export default App;

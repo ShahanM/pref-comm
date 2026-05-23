@@ -2,8 +2,9 @@ import type { Movie } from '../../types/rssa.types';
 
 export type AdvisorProfile = {
     id: number;
-    movies: Movie[];
+    profile_top_n: Movie[];
     recommendation: Movie;
+    avatar?: Avatar;
     selected?: boolean;
     responded?: boolean;
 };

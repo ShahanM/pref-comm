@@ -1,18 +1,29 @@
-import { DemographicsPage, FinalPage, MovieRatingPage, SurveyPage, FeedbackPage } from '@rssa-project/study-template';
+import { DemographicsPage, FinalPage, MovieRatingPage, SurveyPage } from '@rssa-project/study-template';
+import React from 'react';
 import AdvisorsPage from './advisors/AdvisorsPage';
 import InformedConsent from './ConsentPage';
-import SystemIntroPage from './SystemIntroPage';
 import Debrief from './Debrief';
+import SystemIntroPage from './SystemIntroPage';
 
-export const componentMap: {
-    [key: string]: React.FC;
-} = {
+export const componentMap: { [key: string]: React.FC } = {
     ConsentStep: InformedConsent,
     InstructionStep: SystemIntroPage,
     SurveyStep: SurveyPage,
     PreferenceElicitationStep: MovieRatingPage,
     TaskStep: AdvisorsPage,
     ExtraStep: Debrief,
-    DemographicsStep: DemographicsPage,
+    DemographicsStep: (props) =>
+        React.createElement(DemographicsPage, {
+            ...props,
+            iCountry: false,
+            countryState: 'United States',
+            iStateRegion: true,
+            iUrbanicity: true,
+            iAge: true,
+            iGender: true,
+            iRaceEthnicity: true,
+            iEducation: true,
+            stateRegionState: undefined,
+        }),
     CompletionStep: FinalPage,
 };

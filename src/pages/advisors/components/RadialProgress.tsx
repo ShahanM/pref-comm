@@ -1,33 +1,25 @@
 import { CheckCircleIcon } from '@heroicons/react/16/solid';
 import { forwardRef, useImperativeHandle, useMemo, useState } from 'react';
 
-// --- Type Definitions ---
-
-// 1. Interface for the methods we expose to the parent (the ref handle)
 export interface ProgressRef {
     increment: () => void;
     decrement: () => void;
     getCurrentStep: () => number;
 }
 
-// 2. Props for the RadialProgress component
 interface RadialProgressProps {
     TOTAL_STEPS: number;
 }
 
-// --- Constants ---
 const RADIUS = 60;
 const STROKE_WIDTH = 12;
 const VIEWBOX_SIZE = 200;
 const CENTER_COORDINATE = VIEWBOX_SIZE / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
-// 3. RadialProgress Component (The Child)
-// We use forwardRef to receive a ref from the parent
 const RadialProgress = forwardRef<ProgressRef, RadialProgressProps>(({ TOTAL_STEPS }, ref) => {
     const [currentStep, setCurrentStep] = useState(1);
 
-    // Define the actual functions that modify the state
     const increment = () => {
         setCurrentStep((prev) => Math.min(prev + 1, TOTAL_STEPS));
     };
@@ -38,22 +30,18 @@ const RadialProgress = forwardRef<ProgressRef, RadialProgressProps>(({ TOTAL_STE
 
     const getCurrentStep = () => currentStep;
 
-    // Use useImperativeHandle to expose only the increment/decrement methods
-    // and the current step getter via the ref passed from the parent.
     useImperativeHandle(ref, () => ({
         increment,
         decrement,
         getCurrentStep,
     }));
 
-    // Calculate percentage and stroke offset
     const { percentage, strokeDashoffset } = useMemo(() => {
         const calculatedPercentage = Math.floor((currentStep / TOTAL_STEPS) * 100);
         const offset = CIRCUMFERENCE - (calculatedPercentage / 100) * CIRCUMFERENCE;
         return { percentage: calculatedPercentage, strokeDashoffset: offset };
     }, [currentStep, TOTAL_STEPS]);
 
-    // Determine the color class based on progress
     const progressColor =
         currentStep === TOTAL_STEPS ? 'text-green-500' : percentage >= 50 ? 'text-blue-500' : 'text-indigo-500';
 
@@ -63,7 +51,6 @@ const RadialProgress = forwardRef<ProgressRef, RadialProgressProps>(({ TOTAL_STE
                 className={`w-48 h-48 transform -rotate-90 transition-all duration-500 ${progressColor}`}
                 viewBox={`0 0 ${VIEWBOX_SIZE} ${VIEWBOX_SIZE}`}
             >
-                {/* Background Circle */}
                 <circle
                     className="text-gray-200"
                     strokeWidth={STROKE_WIDTH}
@@ -74,7 +61,6 @@ const RadialProgress = forwardRef<ProgressRef, RadialProgressProps>(({ TOTAL_STE
                     cy={CENTER_COORDINATE}
                 />
 
-                {/* Foreground Progress Arc */}
                 <circle
                     className="transition-all duration-500 ease-out"
                     strokeWidth={STROKE_WIDTH}
@@ -89,7 +75,6 @@ const RadialProgress = forwardRef<ProgressRef, RadialProgressProps>(({ TOTAL_STE
                 />
             </svg>
 
-            {/* Percentage Text / Completion Icon */}
             <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
                 {currentStep === TOTAL_STEPS ? (
                     <div className="text-green-600 flex flex-col items-center">
@@ -105,8 +90,5 @@ const RadialProgress = forwardRef<ProgressRef, RadialProgressProps>(({ TOTAL_STE
         </div>
     );
 });
-
-// 4. App Component (The Parent)
-
 
 export default RadialProgress;

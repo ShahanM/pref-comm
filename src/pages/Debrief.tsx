@@ -1,4 +1,4 @@
-import { Select } from '@rssa-project/study-template';
+// import { Select } from '@rssa-project/study-template';
 
 const Debrief: React.FC = () => {
     return (
@@ -18,7 +18,7 @@ const Debrief: React.FC = () => {
             <p>As such, we invite you to answer this last question:</p>
 
             <label>Did you realize that the study did not involve real peer recommenders?</label>
-            <Select>
+            <select onChange={() => {}}>
                 <option value="certain_not_real">I was certain that the peer recommenders were not real</option>
                 <option value="suspected_not_real">
                     I suspected that the peer recommenders were not real, but I was not certain
@@ -27,7 +27,7 @@ const Debrief: React.FC = () => {
                     I suspected that the peer recommenders were real, but I was not certain
                 </option>
                 <option value="certain_real">I was certain that the peer recommenders were real</option>
-            </Select>
+            </select>
 
             <p>
                 Your insights will help improve the design of personalized recommendation tools and enhance our

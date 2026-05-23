@@ -1,27 +1,26 @@
 import { CheckCircleIcon } from '@heroicons/react/16/solid';
+import { useStudy } from '@rssa-project/api';
+import { LoadingText, useStepCompletion } from '@rssa-project/study-template';
 import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useMemo, useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useStudy } from '@rssa-project/api';
 import { useAdvisorSelection } from '../../../hooks/useAdvisorSelection';
-import type {
-    AdviseResponse,
-    AdvisorProfile,
-    PreferenceCommResponseWrapper,
-    RecommendationType,
-} from '../../../types/preferenceCommunity.types';
+import type { AdviseResponse, AdvisorProfile, RecommendationType } from '../../../types/preferenceCommunity.types';
 import { type StudyLayoutContextType } from '../../../types/study.types';
-import { LoadingText, useStepCompletion } from '@rssa-project/study-template';
 import { AVATAR_IMGS } from '../advisorsMap';
 
-interface RecommendationRequestPayload {
-    step_id: string;
-}
+// interface RecommendationRequestPayload {
+//     step_id: string;
+// }
 
+interface EnrichedResponseWrapper<T> {
+    response_type: string;
+    items: T[];
+}
 const AdvisorsNavigation = ({
     condition,
-    recommendationType = 'baseline',
+    // recommendationType = 'baseline',
 }: {
     condition?: number;
     recommendationType?: RecommendationType;
@@ -35,17 +34,26 @@ const AdvisorsNavigation = ({
             const contextData = {
                 step_id: studyStep.id,
                 context_tag: 'preference community advisor recommendations',
-                rec_type: recommendationType,
+                schema_type: 'community_advisors',
             };
-            const response = await studyApi.post<RecommendationRequestPayload, PreferenceCommResponseWrapper>(
+
+            const response = await studyApi.post<any, EnrichedResponseWrapper<AdvisorProfile>>(
                 'recommendations/',
                 contextData
             );
-            return response.items;
+
+            const mappedAdvisors: Record<string, AdvisorProfile> = {};
+
+            if (response && response.items) {
+                response.items.forEach((advisor) => {
+                    mappedAdvisors[String(advisor.id)] = advisor;
+                });
+            }
+
+            return mappedAdvisors;
         },
         enabled: !!studyStep,
     });
-
     const { data: adviseResponses } = useQuery({
         queryKey: ['adviseResponses'],
         queryFn: async () => await studyApi.get<AdviseResponse[]>(`responses/interactions/${studyStep.id}`),

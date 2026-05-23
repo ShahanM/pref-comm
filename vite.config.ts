@@ -6,9 +6,8 @@ import { defineConfig } from 'vite';
 export default defineConfig(() => {
     return {
         plugins: [react(), tailwindcss()],
-        base: '/preference-community/',
         build: {
-            outDir: 'build',
+            outDir: 'dist',
         },
         server: {
             port: 3340,
