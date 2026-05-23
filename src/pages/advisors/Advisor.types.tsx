@@ -1,64 +1,55 @@
-import { Movie } from "../../widgets/moviegrid/moviegriditem/MovieGridItem.types";
-
-export interface AdvisorWidgetProps {
-	// participantId: string;
-	// currentAdvisors: Map<string, any>;
-}
+import type { Movie } from '../../types/rssa.types';
 
 export type AdvisorProfile = {
-	id: string;
-	movies: Movie[];
-	recommendation: Movie;
-	selected?: boolean;
-	responded?: boolean;
-	recommendedMovie?: Movie;
-	rationaleText?: string;
-}
+    id: number;
+    profile_top_n: Movie[];
+    recommendation: Movie;
+    avatar?: Avatar;
+    selected?: boolean;
+    responded?: boolean;
+};
 
 export interface Avatar {
-	src: string;
-	alt: string;
-	name: string;
+    src: string;
+    alt: string;
+    name: string;
 }
 
 export interface UserResponseFlag {
-	selected?: boolean;
-	responded?: boolean;
+    selected?: boolean;
+    responded?: boolean;
 }
 
-export type AdviceSelectionAction =
-	| { type: "ACCEPT" }
-	| { type: "REJECT" }
-	| { type: 'RESET' };
-
+export type AdviceSelectionAction = { type: 'ACCEPT' } | { type: 'REJECT' } | { type: 'RESET' };
 
 export interface AdviceSelectionButtonState {
-	acceptButtonSelected: boolean;
-	rejectButtonSelected: boolean;
+    acceptButtonSelected: boolean;
+    rejectButtonSelected: boolean;
 }
 
 export interface AdviceSelectionButtonProps {
-	onAccept: () => void;
-	onReject: () => void;
-	disabled?: boolean;
-	resetCondition?: string;
+    onAccept: () => void;
+    onReject: () => void;
+    disabled?: boolean;
+    resetCondition?: number;
 }
 
 export interface UserResponsePanelProps {
-	// participantId: string;
-	// advisor: AdvisorProfile;
-	updateCallback: (advisorId: string, response: UserResponseFlag) => void;
-	avatar: Avatar;
+    participantId: string;
+    advisor: AdvisorProfile;
+    updateCallback: (advisorId: number, response: UserResponseFlag) => void;
+    avatar: Avatar;
 }
 
 export interface UserSelectionResponse {
-	user_id: string;
-	advisor_id: string;
-	selection: string;
+    user_id: string;
+    advisor_id: number;
+    selection: string;
 }
 
 export interface AdviceSelectionWidgetProps {
-	avatarName: string
-	onSelection: (advisorId: string, response: UserResponseFlag) => void
-	advisorId: string
+    avatarName: string;
+    participantId: string;
+    onSelection: (advisorId: number, response: UserResponseFlag) => void;
+    advisorId: number;
 }
