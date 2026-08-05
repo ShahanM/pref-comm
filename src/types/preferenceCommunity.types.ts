@@ -1,4 +1,4 @@
-import type { Movie, MovieDetails } from './rssa.types';
+import type { Movie } from './rssa.types';
 
 export type RecommendationType = 'baseline' | 'diverse' | 'reference';
 
@@ -10,10 +10,13 @@ export type Avatar = {
     src: AvatarType;
 };
 
+export interface Recommendation extends Movie {
+    advisor_suggestion: string;
+}
 export type AdvisorProfile = {
     id: string;
     profile_top_n: Movie[];
-    recommendation: MovieDetails;
+    recommendation: Recommendation;
     avatar?: Avatar;
     accepted?: boolean;
     responded?: boolean;

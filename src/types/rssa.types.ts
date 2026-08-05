@@ -58,11 +58,6 @@ export interface Movie {
 export interface EmotionMovies extends Movie, MovieEmotions {}
 export interface MovieRecommdantions extends Movie, MovieRecommendationText {}
 
-export interface MovieDetails extends Movie {
-    emotions: MovieEmotions | null;
-    recommendations_text: MovieRecommendationText | null;
-}
-
 export interface Page {
     id: string;
     step_id: string;

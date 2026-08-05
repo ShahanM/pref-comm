@@ -1,7 +1,7 @@
+import { useStudy } from '@rssa-project/api';
 import { useQuery } from '@tanstack/react-query';
 import React, { useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { useStudy } from '@rssa-project/api';
 import { useAdvisorSelection } from '../../../hooks/useAdvisorSelection';
 import type { AdviseResponse } from '../../../types/preferenceCommunity.types';
 import type { StudyLayoutContextType } from '../../../types/study.types';
@@ -20,64 +20,74 @@ const AdvisorsWidget: React.FC = () => {
     });
 
     const avatarImg = useMemo(() => {
-        if (!selectedAdvisor || !selectedAdvisor.avatar) return;
-        return AVATAR_IMGS[selectedAdvisor.avatar?.src];
+        if (!selectedAdvisor?.avatar) return undefined;
+        return AVATAR_IMGS[selectedAdvisor.avatar.src];
     }, [selectedAdvisor]);
 
     const adviseResponse = useMemo(() => {
-        if (!selectedAdvisor || !adviseResponses) return;
-        const response = adviseResponses.find(
-            (res: AdviseResponse) => res.payload_json.advisor_id === selectedAdvisor.id
-        );
-        return response;
+        if (!selectedAdvisor || !adviseResponses) return undefined;
+        return adviseResponses.find((res) => res.payload_json.advisor_id === selectedAdvisor.id);
     }, [selectedAdvisor, adviseResponses]);
 
     const loadingContainer = (content: React.ReactNode) => (
-        <div className="flex flex-1 items-center justify-center border border-gray-300 rounded-md mt-1 ms-1 bg-gray-50 text-gray-500">
+        <div className="flex flex-1 items-center justify-center border border-gray-300 rounded-md mt-1 ms-1 bg-gray-50 text-gray-500 h-[60vh]">
             {content}
         </div>
     );
 
-    if (!selectedAdvisor) return loadingContainer(<>No Advisors selected</>);
-    if (isLoading) return loadingContainer(<>Loading data...</>);
+    if (!selectedAdvisor) return loadingContainer(<span>No Advisors selected</span>);
+    if (isLoading) return loadingContainer(<span>Loading data...</span>);
 
     const recommendation = selectedAdvisor.recommendation;
-    console.log('Advisor', selectedAdvisor, typeof selectedAdvisor);
+
     return (
-        <div className="flex flex-1 w-full">
-            <div className="py-3 mt-1 border border-gray-300 rounded-md text-left">
-                <div className="flex justify-between m-3 shadow-sm py-3 rounded-md">
-                    <h4 className="mx-3 font-medium">{`${selectedAdvisor?.avatar?.name}'s profile`}</h4>
-                    <img className="size-27 rounded-md mx-5 mt-3" src={avatarImg} alt={selectedAdvisor?.avatar?.alt} />
+        <div className="flex flex-col lg:flex-row flex-1 w-full gap-4 mt-1">
+            <div className="flex-1 border border-gray-300 rounded-md text-left bg-white overflow-hidden flex flex-col">
+                <div className="m-4 pb-4 border-b border-gray-100 flex items-center gap-4">
+                    <img
+                        className="w-20 h-20 rounded-md object-cover shadow-sm border border-gray-200"
+                        src={avatarImg}
+                        alt={selectedAdvisor.avatar?.alt}
+                    />
+                    <h3 className="text-xl font-semibold text-gray-800">{`${selectedAdvisor.avatar?.name}'s Profile`}</h3>
                 </div>
-                <div className="mx-3 mt-3">
-                    <h4 className="font-medium">Top movies</h4>
-                    <div className="grid grid-cols-7 gap-1 mt-2">
-                        {Array.from(selectedAdvisor.profile_top_n).map((movie, index) => (
-                            <div key={index} className="">
+
+                <div className="mx-4 mt-2">
+                    <h4 className="font-medium text-gray-700">{`${selectedAdvisor.avatar?.name}'s Top Rated Movies`}</h4>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-7 gap-3 mt-3">
+                        {selectedAdvisor.profile_top_n.map((movie) => (
+                            <div key={movie.id} className="flex flex-col">
                                 <img
-                                    className="rounded-md"
+                                    className="rounded-md shadow-sm aspect-2/3 object-cover w-full"
                                     src={movie.tmdb_poster}
                                     alt={`Movie poster for ${movie.title} from ${movie.year}`}
                                 />
-                                <p className="mt-2">{movie.title}</p>
+                                <p className="mt-2 text-xs font-medium text-gray-800 text-center leading-tight">
+                                    {movie.title}
+                                </p>
                             </div>
                         ))}
                     </div>
                 </div>
-                <div className="flex mx-3 mt-5 justify-between gap-5">
-                    <div>
-                        <h4 className="font-medium">{`${selectedAdvisor?.avatar?.name}'s recommendation to you`}</h4>
-                        <p className="mt-3 text-justify">{recommendation.recommendations_text?.formal}</p>
+
+                <div className="flex flex-col sm:flex-row mx-4 mt-8 mb-6 p-4 bg-amber-50 rounded-lg gap-6 items-start">
+                    <div className="flex-1">
+                        <h4 className="font-semibold text-amber-900">{`Recommendation for You`}</h4>
+                        <p className="mt-3 text-justify text-amber-800 text-sm leading-relaxed">
+                            {recommendation.advisor_suggestion}
+                        </p>
                     </div>
                     <img
-                        className="rounded-md h-81"
+                        className="rounded-md w-32 md:w-48 shadow-md aspect-2/3 object-cover shrink-0"
                         src={recommendation.tmdb_poster}
                         alt={`Movie poster for ${recommendation.title} from ${recommendation.year}`}
                     />
                 </div>
             </div>
-            <UserResponsePanel key={selectedAdvisor.id} userResponse={adviseResponse} advisor={selectedAdvisor} />
+
+            <div className="lg:w-1/3 w-full">
+                <UserResponsePanel key={selectedAdvisor.id} userResponse={adviseResponse} advisor={selectedAdvisor} />
+            </div>
         </div>
     );
 };

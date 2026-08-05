@@ -43,10 +43,8 @@ const AdviseChooser = ({
     const acceptText = status === 'accepted' ? 'Accepted' : 'Accept';
     const rejectText = status === 'rejected' ? 'Rejected' : 'Reject';
 
-
-
     return (
-        <div className="flex w-full h-16 space-x-3 p-1 bg-white rounded-xl transition-all duration-300">
+        <div className="flex w-full h-11 space-x-3 p-1 bg-white rounded-xl transition-all duration-300">
             <button
                 onClick={acceptAction}
                 className={clsx(
@@ -68,8 +66,8 @@ const AdviseChooser = ({
                     baseButtonClasses,
                     rejectWidth,
                     status === 'rejected'
-                        ? 'bg-red-600 text-white shadow-lg'
-                        : 'bg-red-500 text-white hover:bg-red-600',
+                        ? 'bg-red-600 text-gray-900 shadow-lg'
+                        : 'bg-red-500 text-gray-900 hover:bg-red-600',
                     status === 'accepted' && 'text-transparent'
                 )}
                 disabled={status === 'accepted'}
